@@ -50,8 +50,10 @@ for (path in file_path) {
   
 }
 
-# Merging the individual dfs together
+## Merging the individual dfs together
 transcriptions <- do.call(rbind, data_list)
+
+## Removing unneeded items from the environment
 
 rm(data, data_list, file_name, file_names, file_path, path)
 
