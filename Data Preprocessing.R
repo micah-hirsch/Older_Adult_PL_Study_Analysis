@@ -35,13 +35,15 @@ for (path in file_path) {
     data <- rio::import(file_name) %>%
       ### Creating Speaker, Phrase, and Target Number Variables
       dplyr::mutate(speaker = basename(path),
-                    phrase = paste(strsplit(File,"_")[[1]][1:2],collapse = "_"),
+                    code = str_remove(File, "_AM1\\.wav"),
+                    code = str_remove(code, "_PDM10\\.wav"),
+                    code = str_remove(code, "_ALSM1\\.wav"),
                     target_number = str_count(Target, "\\S+")) %>%
       ### Removing Date and File variables since we do not need them
       dplyr::select(!c(Date, File)) %>%
       ### Relocating new variables
       dplyr::relocate(speaker, .before = Target) %>%
-      dplyr::relocate(phrase, .before = Target) %>%
+      dplyr::relocate(code, .before = Target) %>%
       dplyr::relocate(target_number, .after = Target)
     
     data_list[[length(data_list) + 1]] <- data
@@ -51,7 +53,8 @@ for (path in file_path) {
 }
 
 ## Merging the individual dfs together
-transcriptions <- do.call(rbind, data_list)
+transcriptions <- do.call(rbind, data_list) %>%
+  rename_all(., .funs = tolower)
 
 ## Removing unneeded items from the environment
 
@@ -62,4 +65,18 @@ rm(data, data_list, file_name, file_names, file_path, path)
 ## There was an error in matching the target phrase with the correct participant responses for AM1.
 ## This next section of code fixes this error.
 
+targets <- rio::import_list("Raw Data/Stimuli List/Stimuli Testing Sets.xlsx", 
+                            which = c("Pretest", "Posttest"), rbind = T, rbind_label = "Type") %>%
+  rename_all(., .funs = tolower)
 
+transcriptions2 <- transcriptions %>%
+  dplyr::rename(target2 = target) %>%
+  dplyr::left_join(targets, by = "code") %>%
+  mutate(target = if_else(speaker %in%  "PDM10", target2, target)) %>% 
+  select(-c(target2, type.y)) %>%
+  dplyr::rename(type = type.x) %>%
+  dplyr::relocate(target, .before = target_number)
+
+## Removing unneedeed items from the environment
+
+rm(targets, transcriptions)
