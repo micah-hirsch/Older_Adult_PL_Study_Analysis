@@ -87,10 +87,23 @@ rm(targets, transcriptions)
 
 transcriptions2 <- autoscore::autoscore(
   transcriptions2,
-  double_letter_rule = TRUE,
+  double_letter_rule = T,
   acceptable_df = autoscore::acceptable_spellings,
-  plural_rule = TRUE,
-  tense_rule = TRUE
-)
+  plural_rule = T,
+  plural_add_rule = T,
+  tense_rule = T,
+  tense_add_rule = T,
+  a_the_rule = T,
+  double_letter_rule = T) %>%
+  dplyr::rename(correct_words = autoscore)
 
+# Cognitive Data
 
+## In the sections below, the cognitive data collected from the participants will be cleaned
+## and merged with the transcription df
+
+## Importing raw cognitive data
+
+cog <- rio::import("Raw Data/Cognitive Data/2023-01-20 12.45.01 Assessment Scores.csv")
+
+## Selecting needed participants and variables. Data
