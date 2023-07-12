@@ -106,4 +106,26 @@ transcriptions2 <- autoscore::autoscore(
 
 cog <- rio::import("Raw Data/Cognitive Data/2023-01-20 12.45.01 Assessment Scores.csv")
 
-## Selecting needed participants and variables. Data
+## Selecting needed participants and variables.
+
+cog1 <- cog %>%
+  # Selecting Needed Columns
+  dplyr::select(`PIN`, `Inst`, `Uncorrected Standard Score`, 
+                `Age-Corrected Standard Score`, `Threshold Right Ear`, `Threshold Left Ear`) %>%
+  # Filtering out any participants that are "test" or "lab assistant" etc.
+  dplyr::filter(!grepl("Lab Assistant", PIN)) %>%
+  dplyr::filter(!grepl("Test", PIN)) %>%
+  dplyr::filter(!grepl("test", PIN)) %>%
+  dplyr::filter(!grepl("Volunteer", PIN)) %>%
+  dplyr::filter(!grepl("P3redo", PIN)) %>%
+  dplyr::filter(!grepl("ABC", PIN)) %>%
+  # Removing P from beginning of ID column
+  dplyr::mutate(PIN = ifelse(grepl("P", PIN), gsub("P", "", PIN), PIN)) %>%
+  # filtering out composite scares
+  dplyr::filter(Inst != "Cognition Early Childhood Composite v1.1") %>%
+  # Rename PIN to id
+  dplyr::rename(id = PIN) %>%
+  # Recode NIH subtests
+  dplyr::mutate(Inst = str_remove(Inst, "NIH Toolbox ")) %>%
+  dplyr::mutate(Inst = str_remove(Inst, " Age\\s*\\d+\\+\\s*(Form\\s+A\\s+)?v2\\.1$")) %>%
+  dplyr::mutate(Inst = tolower(gsub(" ", "_", Inst)))
