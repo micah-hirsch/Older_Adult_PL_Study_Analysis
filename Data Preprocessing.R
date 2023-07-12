@@ -80,3 +80,17 @@ transcriptions2 <- transcriptions %>%
 ## Removing unneedeed items from the environment
 
 rm(targets, transcriptions)
+
+# Autoscore
+
+## Counting the number of words correctly transcribed using Autoscore
+
+transcriptions2 <- autoscore::autoscore(
+  transcriptions2,
+  double_letter_rule = TRUE,
+  acceptable_df = autoscore::acceptable_spellings,
+  plural_rule = TRUE,
+  tense_rule = TRUE
+)
+
+
