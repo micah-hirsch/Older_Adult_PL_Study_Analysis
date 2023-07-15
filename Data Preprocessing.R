@@ -96,6 +96,7 @@ transcriptions2 <- autoscore::autoscore(
   double_letter_rule = T) %>%
   dplyr::rename(., correct_words = autoscore)
 
+
 # Cognitive Data
 
 ## In the sections below, the cognitive data collected from the participants will be cleaned
@@ -104,6 +105,7 @@ transcriptions2 <- autoscore::autoscore(
 ## Importing raw cognitive data
 
 cog <- rio::import("Raw Data/Cognitive Data/2023-01-20 12.45.01 Assessment Scores.csv")
+
 
 ## Selecting needed participants and variables.
 
@@ -222,3 +224,4 @@ rm(cog, cog1, cog_subtests, corrected, transcriptions2, uncorrected, words_in_no
 # Exporting cleaned df
 
 rio::export(cleaned_data, "Cleaned_Data.csv")
+
