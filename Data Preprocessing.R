@@ -109,23 +109,103 @@ cog <- rio::import("Raw Data/Cognitive Data/2023-01-20 12.45.01 Assessment Score
 ## Selecting needed participants and variables.
 
 cog1 <- cog %>%
-  # Selecting Needed Columns
+  ## Selecting needed variables
   dplyr::select(`PIN`, `Inst`, `Uncorrected Standard Score`, 
                 `Age-Corrected Standard Score`, `Threshold Right Ear`, `Threshold Left Ear`) %>%
-  # Filtering out any participants that are "test" or "lab assistant" etc.
+  ## Filtering out any participants that are "test", "lab assistant", etc.
   dplyr::filter(!grepl("Lab Assistant", PIN)) %>%
   dplyr::filter(!grepl("Test", PIN)) %>%
   dplyr::filter(!grepl("test", PIN)) %>%
   dplyr::filter(!grepl("Volunteer", PIN)) %>%
   dplyr::filter(!grepl("P3redo", PIN)) %>%
   dplyr::filter(!grepl("ABC", PIN)) %>%
-  # Removing P from beginning of ID column
+  ## Removing P from beginning of ID column
   dplyr::mutate(PIN = ifelse(grepl("P", PIN), gsub("P", "", PIN), PIN)) %>%
-  # filtering out composite scares
+  ## Filtering out composite scares
   dplyr::filter(Inst != "Cognition Early Childhood Composite v1.1") %>%
-  # Rename PIN to id
+  ## Rename PIN to id
   dplyr::rename(id = PIN) %>%
-  # Recode NIH subtests
+  ## Recode NIH subtests
   dplyr::mutate(Inst = str_remove(Inst, "NIH Toolbox ")) %>%
   dplyr::mutate(Inst = str_remove(Inst, " Age\\s*\\d+\\+\\s*(Form\\s+A\\s+)?v2\\.1$")) %>%
-  dplyr::mutate(Inst = tolower(gsub(" ", "_", Inst)))
+  dplyr::mutate(Inst = tolower(gsub(" ", "_", Inst))) %>%
+  ## Making variable names all in lower case
+  rename_all(., .funs = ~tolower(gsub(" ", "_", ., fixed = T))) %>%
+  ## Shortening NIH variable names
+  dplyr::mutate(inst = case_when(inst == "words-in-noise_test" ~ "win",
+                                 inst == "list_sorting_working_memory_test" ~ "list_sort",
+                                 inst == "flanker_inhibitory_control_and_attention_test" ~ "flanker",
+                                 inst == "dimensional_change_card_sort_test" ~ "card_sort",
+                                 inst == "picture_vocabulary_test" ~ "vocab",
+                                 inst == "pattern_comparison_processing_speed_test" ~ "pattern",
+                                 inst == "picture_sequence_memory_test" ~ "pic_seq",
+                                 inst == "cognition_fluid_composite_v1.1" ~ "fluid_cog",
+                                 TRUE ~ inst)) %>%
+  ## Removing unnecessary variables
+  dplyr::filter(inst != "picture_vocabulary_test_age_3+_practice_v2.1") %>%
+  dplyr::filter(inst != "pattern_comparison_processing_speed_test_age_7+_practice_v2.1")
+
+# Cleaning Cognitive Subtest Scores
+
+## Creating a separate df for cog subtest scores without words-in-noise test
+
+cog_subtests <- cog1 %>%
+  dplyr::filter(inst != "win") %>%
+  dplyr::select(!c(threshold_right_ear, threshold_left_ear))
+
+### Getting the uncorrected scores
+
+uncorrected <- cog_subtests %>%
+  dplyr::select(c(id, inst, uncorrected_standard_score)) %>%
+  tidyr::pivot_wider(names_from = inst,
+                     values_from = uncorrected_standard_score)
+
+### Renaming uncorrected score variables
+
+new_names <- names(uncorrected) %>%
+  map_chr(~ if (. != "id") paste0(., "_u") else .)
+
+names(uncorrected) <- new_names  
+
+### Getting the age-corrected scores
+
+corrected <- cog_subtests %>%
+  dplyr::select(c(id, inst, `age-corrected_standard_score`)) %>%
+  tidyr::pivot_wider(names_from = inst,
+                     values_from = `age-corrected_standard_score`)
+
+### Renaming age-corrected score variables
+
+new_names <- names(corrected) %>%
+  map_chr(~ if (. != "id") paste0(., "_c") else .)
+
+names(corrected) <- new_names  
+
+### Merging uncorrected and age-corrected standard scores together
+
+cog_subtests <- dplyr::full_join(uncorrected, corrected, by = "id") %>%
+  dplyr::mutate(., id = as.numeric(id))
+
+## Creating a separate df for words-in-noise test scores
+
+words_in_noise <- cog1 %>%
+  dplyr::filter(inst == "win") %>%
+  dplyr::select(!2:4)
+
+### Creating two win variables for left and right ear thresholds
+
+new_names <- names(words_in_noise) 
+
+for (i in seq_along(new_names)) {
+  if (new_names[i] != "id") {
+    new_names[i] <- gsub("threshold", "win", new_names[i])
+  }
+}
+
+names(words_in_noise) <- new_names
+
+words_in_noise <- words_in_noise %>%
+  dplyr::rename(win_r = "win_right_ear",
+                win_l = "win_left_ear") %>%
+  dplyr::mutate(id = as.numeric(id))
+
