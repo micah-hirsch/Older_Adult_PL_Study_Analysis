@@ -209,3 +209,8 @@ words_in_noise <- words_in_noise %>%
                 win_l = "win_left_ear") %>%
   dplyr::mutate(id = as.numeric(id))
 
+# Merging the cognitive and win dfs with the transcriptions df
+
+cleaned_data <- transcriptions2 %>%
+  left_join(cog_subtests, by = "id") %>%
+  left_join(words_in_noise, by = "id")
