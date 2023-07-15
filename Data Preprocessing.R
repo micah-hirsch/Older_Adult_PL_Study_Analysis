@@ -218,3 +218,7 @@ cleaned_data <- transcriptions2 %>%
 # Removing unneeded objects from the environment
 
 rm(cog, cog1, cog_subtests, corrected, transcriptions2, uncorrected, words_in_noise, i, new_names)
+
+# Exporting cleaned df
+
+rio::export(cleaned_data, "Cleaned_Data.csv")
