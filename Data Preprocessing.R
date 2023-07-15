@@ -72,7 +72,7 @@ targets <- rio::import_list("Raw Data/Stimuli List/Stimuli Testing Sets.xlsx",
 transcriptions2 <- transcriptions %>%
   dplyr::rename(target2 = target) %>%
   dplyr::left_join(targets, by = "code") %>%
-  mutate(target = if_else(speaker %in%  "PDM10", target2, target)) %>% 
+  mutate(target = dplyr::if_else(speaker %in%  "PDM10", target2, target)) %>% 
   select(-c(target2, type.y)) %>%
   dplyr::rename(type = type.x) %>%
   dplyr::relocate(target, .before = target_number)
@@ -87,7 +87,6 @@ rm(targets, transcriptions)
 
 transcriptions2 <- autoscore::autoscore(
   transcriptions2,
-  double_letter_rule = T,
   acceptable_df = autoscore::acceptable_spellings,
   plural_rule = T,
   plural_add_rule = T,
@@ -95,7 +94,7 @@ transcriptions2 <- autoscore::autoscore(
   tense_add_rule = T,
   a_the_rule = T,
   double_letter_rule = T) %>%
-  dplyr::rename(correct_words = autoscore)
+  dplyr::rename(., correct_words = autoscore)
 
 # Cognitive Data
 
@@ -179,6 +178,7 @@ corrected <- cog_subtests %>%
 new_names <- names(corrected) %>%
   map_chr(~ if (. != "id") paste0(., "_c") else .)
 
+
 names(corrected) <- new_names  
 
 ### Merging uncorrected and age-corrected standard scores together
@@ -214,3 +214,7 @@ words_in_noise <- words_in_noise %>%
 cleaned_data <- transcriptions2 %>%
   left_join(cog_subtests, by = "id") %>%
   left_join(words_in_noise, by = "id")
+
+# Removing unneeded objects from the environment
+
+rm(cog, cog1, cog_subtests, corrected, transcriptions2, uncorrected, words_in_noise, i, new_names)
