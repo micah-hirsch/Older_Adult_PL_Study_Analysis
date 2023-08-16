@@ -1,0 +1,189 @@
+---
+title: "Preliminary Data Analysis"
+author: "Micah E. Hirsch"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+This document shows the results of the preliminary data analysis for the older adult perceptual learning study. The results shown here are primarily descriptive results and data visualizations to include in a proposal document for the 2024 Motor Speech Conference. Full data analysis will be conducted at a later time.
+
+All data processing and analysis was conducted using R Version 4.3.1
+
+```{r, echo = F, warning = F, message = F}
+
+# Loading in needed packages
+
+library(tidyverse)
+library(rio)
+library(gt)
+
+# Loading in cleaned dataset
+
+pl_data <- rio::import("Cleaned_Data.csv")
+
+```
+
+# Descriptive Statistics
+
+## Intelligibility Data
+
+We first started by calculating pretest and posttest intelligibility for each listener. This was done by summing the total number of correctly-identified words and the total number of target words presented across the phrases in the pretest and posttest phases. Then, intelligibility was calculated by dividng the total number of correct words by the total number of target words and multiplying by 100. Intelligibility improvement (posttest - pretest intelligibility) was then calculated for each listener. Click "show code" to see this process in more detail.
+
+```{r, warning = F, message = F}
+
+# Calculating Intelligibility
+
+intel_data <- pl_data %>%
+  ## Grouping by id (i.e. each listener in the study) and testing phase (pretest, posttest)
+  dplyr::group_by(id, type) %>%
+  ## Calculating total number of correct words (words_c), total number of target words (words_t),
+  ## pretest and posttest intelligibility for each listener (intel).
+  dplyr::summarize(words_c = sum(correct_words), 
+                   words_t = sum(target_number),
+                   intel = (words_c/words_t)*100) %>%
+  ## Removing words_c and words_t since it is no longer needed
+  dplyr::select(!c(words_c, words_t)) %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = intel) %>%
+  ## Calculating improvement scores for each listener
+  dplyr::mutate(improv = posttest - pretest) %>%
+  dplyr::ungroup()
+
+# Merging the speaker and cognitive data back into the dataset. This is the main dataset we will use for analyses
+
+## First getting relevant information from the primary dataset.
+## For this analysis, we are using the age-corrected cognitive scores (variables that end in _c)
+analysis_data <- pl_data %>%
+  dplyr::select(c(id, speaker, list_sort_c:win_l)) %>%
+  dplyr::distinct() %>%
+  dplyr::right_join(intel_data, ., by = "id")
+
+# Removing unneeded items from the environment
+
+rm(intel_data)
+
+```
+
+### Descriptive Intelligibility Data Across Listeners
+
+Across listeners, the mean and standard deviation values for pretest intelligibility, posttest intelligibility, and intelligibility difference is below.
+
+```{r, warning = F, message = F}
+
+intel_overall <- analysis_data %>%
+    dplyr::select(id:speaker) %>%
+    tidyr::pivot_longer(cols = posttest:improv,
+                        names_to = "phase", 
+                        values_to = "intel") %>%
+    dplyr::mutate(phase = as.factor(phase),
+                  phase = fct_relevel(phase, "pretest", "posttest", "improv"),
+                  phase = recode(phase, pretest = "Pretest", posttest = "Posttest",
+                                 improv = "Difference")) %>%
+    dplyr::group_by(phase) %>%
+    dplyr::summarize(Mean = mean(intel), SD = sd(intel)) %>%
+    dplyr::ungroup() %>%
+    gt::gt() %>%
+    cols_label(phase = " ")
+
+intel_overall
+
+# Saving Table
+
+intel_overall %>%
+  gt::gtsave("Overall_Intel.html", path = "Tables")
+
+```
+
+
+### Intelligibility Improvement by Training Group
+
+Listeners in this study were either assigned to perceptual training conditions for a male speaker with cerebellar ataxia (AM1) or a male speaker with Parkinson's disease (PDM10). We also calculated the mean and standard deviation in pretest intelligibility, posttest intelligibility, and intelligibility difference for each training group.
+
+```{r, warning = F, message = F}
+
+by_speaker <- analysis_data %>%
+    dplyr::select(id:speaker) %>%
+    tidyr::pivot_longer(cols = posttest:improv,
+                        names_to = "phase", 
+                        values_to = "intel") %>%
+    dplyr::mutate(phase = as.factor(phase),
+                  phase = fct_relevel(phase, "pretest", "posttest", "improv"),
+                  phase = recode(phase, pretest = "Pretest", posttest = "Posttest",
+                                 improv = "Difference")) %>%
+    dplyr::group_by(speaker, phase) %>%
+    dplyr::summarize(Mean = mean(intel), SD = sd(intel)) %>%
+    dplyr::ungroup() %>%
+    tidyr::pivot_wider(names_from = speaker,
+                       values_from = c(Mean:SD)) %>%
+    dplyr::relocate(SD_AM1, .before = Mean_PDM10) %>%
+    gt::gt() %>%
+    fmt_number(columns = "Mean_AM1":"SD_PDM10", decimals = 2) %>%
+    tab_spanner(label = "AM1",
+                columns = c(Mean_AM1, SD_AM1)) %>%
+    tab_spanner(label = "PDM10",
+                columns = c(Mean_PDM10, SD_PDM10)) %>%
+    cols_label(phase = " ",
+               Mean_AM1 = "Mean",
+               SD_AM1 = "SD",
+               Mean_PDM10 = "Mean",
+               SD_PDM10 = "SD")
+
+by_speaker
+
+# Saving the Table
+
+by_speaker %>%
+  gt::gtsave("Intel_by_speaker.html", path = "Tables")
+
+# Removing unneeded items
+
+rm(by_speaker, intel_overall)
+
+```
+
+### Pretest vs Posttest Plot
+
+A visual showing difference in pretest and posttest intelligibility scores for all listeners. The mean change in intelligibility for each speaker group is noted by the darker bolder lines. Note the variability in the individual listener responses.
+
+```{r, warning = F, message = F}
+
+# Creating a Custom Color Palette
+my_pal <- c("#160F29", "#246A73", "#368F8B", "#F3DFC1", "#DDBEA8")
+
+analysis_data %>%
+  dplyr::select(c(id:pretest, speaker)) %>%
+  tidyr::pivot_longer(cols = posttest:pretest,
+                      names_to = "phase",
+                      values_to = "intel") %>%
+  dplyr::mutate(phase = as.factor(phase),
+                phase = fct_relevel(phase, "pretest", "posttest")) %>%
+  ggplot() +
+  aes(x = phase,
+      y = intel,
+      group = id,
+      color = speaker) +
+  geom_line(alpha = 0.3) +
+  stat_summary(aes(group = speaker),
+               fun.y = mean, geom = "line", linewidth = 2) +
+  facet_wrap("speaker") +
+  scale_color_manual(values = my_pal) +
+  labs(x = "Phase", y = "Intelligibility") +
+  theme_bw() +
+  theme(legend.position = "none")
+  
+# Save the plot
+
+ggsave("Plots/Pre_Post.png", plot = last_plot())
+
+```
+
