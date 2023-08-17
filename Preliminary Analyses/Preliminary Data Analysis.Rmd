@@ -26,6 +26,9 @@ All data processing and analysis was conducted using R Version 4.3.1
 library(tidyverse)
 library(rio)
 library(gt)
+library(reshape2) #install.packages("reshape2")
+library(ggcorrplot) #install.packages("ggcorrplot")
+library(patchwork) #install.packages("patchwork")
 
 # Loading in cleaned dataset
 
@@ -104,7 +107,6 @@ intel_overall %>%
 
 ```
 
-
 ### Intelligibility Improvement by Training Group
 
 Listeners in this study were either assigned to perceptual training conditions for a male speaker with cerebellar ataxia (AM1) or a male speaker with Parkinson's disease (PDM10). We also calculated the mean and standard deviation in pretest intelligibility, posttest intelligibility, and intelligibility difference for each training group.
@@ -160,7 +162,7 @@ A visual showing difference in pretest and posttest intelligibility scores for a
 # Creating a Custom Color Palette
 my_pal <- c("#160F29", "#246A73", "#368F8B", "#F3DFC1", "#DDBEA8")
 
-analysis_data %>%
+pre_post <- analysis_data %>%
   dplyr::select(c(id:pretest, speaker)) %>%
   tidyr::pivot_longer(cols = posttest:pretest,
                       names_to = "phase",
@@ -179,11 +181,224 @@ analysis_data %>%
   scale_color_manual(values = my_pal) +
   labs(x = "Phase", y = "Intelligibility") +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none", aspect.ratio = 1)
+
+pre_post
   
 # Save the plot
 
 ggsave("Plots/Pre_Post.png", plot = last_plot())
+
+```
+
+## Cognitive Subtests
+
+In this section, we will now look at the listeners' scores on the subtests from the NIH Toolbox Cognitive Battery. The assessments that were administered to the participants are listed below. In this analysis, we are using the age-corrected standard scores.
+
+-   List Sort Working Memory Test (list_sort_c)
+
+-   Flanker Inhibitory Control and Attention Test (flanker_c)
+
+-   Dimensional Change Card Sort Test (card_sort_c)
+
+    -   We also refer to this as cognitive flexibility
+
+-   Picture Vocabulary Test (vocab_c)
+
+-   Pattern Comparison Processing Speed Test (pattern_c)
+
+-   Picture Sequence Memory Test (pic_seq_c)
+
+The dataset also contains the words-in--noise thresholds for the participants' right (win_r) and left (win_l). We determined the participant's best threshold (e.g. the ear with the lower threshold score) and created a new variable called best_win. To see the full data processing steps, click "show code".
+
+```{r}
+
+# Determining ear with the lowest words-in-noise threshold (best_win)
+
+analysis_data <- analysis_data %>%
+  dplyr::mutate(best_win = ifelse(win_r < win_l, win_r, win_l)) %>%
+  dplyr::select(!c(win_r, win_l, fluid_cog_c))
+
+```
+
+
+### Overall Cognitive Scores
+
+The descriptive statistics for performance on each of the cognitive subtests are
+
+```{r, warning = F, message = F}
+
+cog_des <- analysis_data %>%
+  dplyr::select(!c(posttest:speaker)) %>%
+  tidyr::pivot_longer(cols = list_sort_c:best_win,
+                      names_to = "cog",
+                      values_to = "score") %>%
+  dplyr::group_by(cog) %>%
+  dplyr::summarize(Mean = mean(score, na.rm = T), SD = sd(score, na.rm = T)) %>%
+  gt::gt() %>%
+  fmt_number(columns = "Mean":"SD", decimals = 2) %>%
+  cols_label(cog = " ")
+
+cog_des
+
+cog_des %>%
+  gt::gtsave("Overall_cog.html", path = "Tables")
+
+```
+
+### Cognitive Subtest Scores per Training Group
+
+We are now comparing the mean and standard deviation in these cognitive scores for listeners who were trained with AM1 vs PDM10.
+
+```{r, warning = F, message = F}
+
+cog_by_speaker <- analysis_data %>%
+  dplyr::select(!c(posttest:improv)) %>%
+  tidyr::pivot_longer(cols = list_sort_c:best_win,
+                      names_to = "cog",
+                      values_to = "score") %>%
+  dplyr::group_by(cog, speaker) %>%
+  dplyr::summarize(Mean = mean(score, na.rm = T), SD = sd(score, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  tidyr::pivot_wider(names_from = speaker,
+                     values_from = c(Mean:SD)) %>%
+  dplyr::relocate(SD_AM1, .before = Mean_PDM10) %>%
+  gt::gt() %>%
+  fmt_number(columns = "Mean_AM1":"SD_PDM10", decimals = 2) %>%
+  tab_spanner(label = "AM1",
+              columns = c(Mean_AM1, SD_AM1)) %>%
+  tab_spanner(label = "PDM10",
+              columns = c(Mean_PDM10, SD_PDM10)) %>%
+  cols_label(cog = " ",
+             Mean_AM1 = "Mean",
+             SD_AM1 = "SD",
+             Mean_PDM10 = "Mean",
+             SD_PDM10 = "SD")
+
+cog_by_speaker
+
+cog_by_speaker %>%
+  gt::gtsave("cog_by_speaker.html", path = "Tables")
+
+```
+
+
+# Correlations
+
+In this study, we are particularly interested in the relationships between these cognitive subtests and initial intelligibility (pretest) and intelligibility difference between pretest and posttest (improv). In this preliminary analysis, we first started by calculating the correlations between these measures for 1) listeners trained with AM1, and 2) listeners trained with PDM10.
+
+## Correlation Matrix for Listeners assigned to AM1
+
+
+```{r, warning = F, message = F}
+
+AM1_corr <- analysis_data %>%
+  dplyr::filter(speaker == "AM1") %>%
+  dplyr::select(c(pretest:improv, list_sort_c:best_win)) %>%
+  dplyr::rename("Initial Intelligibility" = pretest,
+                "Intelligibility Improvement" = improv,
+                "Working Memory" = list_sort_c,
+                "Inhibitory Control" = flanker_c,
+                "Cognitive Flexibility" = card_sort_c,
+                "Receptive Vocabulary" = vocab_c,
+                "Processing Speed" = pattern_c,
+                "Speech in Noise Threshold" = best_win,
+                "Picture Sequence Memory" = pic_seq_c)
+
+AM1_corr <- round(cor(AM1_corr, use = "pairwise.complete.obs"), 2)
+
+get_lower_tri<-function(AM1_corr){
+    AM1_corr[upper.tri(AM1_corr)]<- NA
+    return(AM1_corr)
+  }
+    
+AM1_lower_cor <- get_lower_tri(AM1_corr)
+
+AM1_lower_cor <- melt(AM1_lower_cor, na.rm = T)
+
+AM1 <- AM1_lower_cor %>%
+  ggplot() +
+  aes(x = Var1,
+      y = Var2,
+      fill = value) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = my_pal[1], high = my_pal[1], mid = "white",
+                      midpoint = 0, limit = c(-1,1), space = "Lab",
+                      name = "Pearson\nCorrelation") +
+  geom_text(aes(Var1, Var2, label = value), color = "black", size = 3) +
+  labs(x = " ",
+       y = " ") +
+  ggtitle('AM1') +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", angle = 45, hjust = 1),
+        aspect.ratio = 1)
+
+AM1
+
+ggsave("Plots/AM1_corr.png", plot = last_plot())
+
+```
+
+## Correlation Martix for Listeners Assigned to PDM10
+
+```{r, warning = F, message = F}
+
+PDM10_corr <- analysis_data %>%
+  dplyr::filter(speaker == "PDM10") %>%
+  dplyr::select(c(pretest:improv, list_sort_c:best_win)) %>%
+  dplyr::rename("Initial Intelligibility" = pretest,
+                "Intelligibility Improvement" = improv,
+                "Working Memory" = list_sort_c,
+                "Inhibitory Control" = flanker_c,
+                "Cognitive Flexibility" = card_sort_c,
+                "Receptive Vocabulary" = vocab_c,
+                "Processing Speed" = pattern_c,
+                "Speech in Noise Threshold" = best_win,
+                "Picture Sequence Memory" = pic_seq_c)
+
+PDM10_corr <- round(cor(PDM10_corr, use = "pairwise.complete.obs"), 2)
+
+get_lower_tri<-function(PDM10_corr){
+    PDM10_corr[upper.tri(PDM10_corr)]<- NA
+    return(PDM10_corr)
+  }
+    
+PDM10_lower_cor <- get_lower_tri(PDM10_corr)
+
+PDM10_lower_cor <- melt(PDM10_lower_cor, na.rm = T)
+
+PDM10 <- PDM10_lower_cor %>%
+  ggplot() +
+  aes(x = Var1,
+      y = Var2,
+      fill = value) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = my_pal[2], high = my_pal[2], mid = "white",
+                      midpoint = 0, limit = c(-1,1), space = "Lab",
+                      name = "Pearson\nCorrelation") +
+  geom_text(aes(Var1, Var2, label = value), color = "black", size = 3) +
+  labs(x = " ",
+       y = " ") +
+  ggtitle('PDM10') +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", angle = 45, hjust = 1),
+        aspect.ratio = 1)
+
+PDM10
+
+ggsave("Plots/PDM10_corr.png", plot = last_plot())
+
+```
+
+
+```{r, echo = F, eval = F}
+
+figure_1 <- (AM1 | PDM10) /
+  pre_post
+
+figure_1
+
+ggsave("Plots/Full_figure.png", plot = last_plot(), width = 15, height = 15, units = "in")
 
 ```
 
