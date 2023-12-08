@@ -94,7 +94,7 @@ transcriptions_fixed <- autoscore::autoscore(
   double_letter_rule = T) %>%
   dplyr::rename(., correct_words = autoscore)
 
-# Cognitve Data
+# Cognitive Data
 
 ## Cleaning cognitve data collected from NIH Toolbox Battery and merging with transcription data
 
@@ -135,7 +135,7 @@ cog1 <- cog %>%
                                  inst == "picture_sequence_memory_test" ~ "pic_seq",
                                  inst == "cognition_fluid_composite_v1.1" ~ "fluid_cog",
                                  TRUE ~ inst)) %>%
-  ## Removing unnecessary variables
+  ## Removing unnecessary subtests
   dplyr::filter(inst != "picture_vocabulary_test_age_3+_practice_v2.1") %>%
   dplyr::filter(inst != "pattern_comparison_processing_speed_test_age_7+_practice_v2.1")
 
