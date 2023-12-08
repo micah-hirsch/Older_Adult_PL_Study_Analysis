@@ -58,3 +58,38 @@ transcriptions <- do.call(rbind, data_list)
 
 # Removing unneeded items from the environment
 rm(data, data_list, file, file_list, file_path, path)
+
+# Fix transcriptions for AM1
+
+## There is an error for matching the correct target and response phrases for listeners trained with speaker AM1.
+## This next section of code fixes this error
+
+targets <- rio::import_list("Stimuli List/Stimuli Testing Sets.xlsx", 
+                            which = c("Pretest", "Posttest"), rbind = T, rbind_label = "Type") %>%
+  rename_all(., .funs = tolower)
+
+transcriptions_fixed <- transcriptions %>%
+  dplyr::rename(target2 = target) %>%
+  dplyr::left_join(targets, by = "code") %>%
+  mutate(target = dplyr::if_else(speaker %in%  "PDM10", target2, target)) %>% 
+  select(-c(target2, type.y)) %>%
+  dplyr::rename(type = type.x) %>%
+  dplyr::relocate(target, .before = target_number)
+
+# Removing unneeded items from the environment
+rm(targets, transcriptions)
+
+# Autoscore
+
+## Count number of correct words using Autoscore
+
+transcriptions_fixed <- autoscore::autoscore(
+  transcriptions_fixed,
+  acceptable_df = autoscore::acceptable_spellings,
+  plural_rule = T,
+  plural_add_rule = T,
+  tense_rule = T,
+  tense_add_rule = T,
+  a_the_rule = T,
+  double_letter_rule = T) %>%
+  dplyr::rename(., correct_words = autoscore)
