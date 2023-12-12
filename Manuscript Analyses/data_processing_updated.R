@@ -96,7 +96,7 @@ transcriptions_fixed <- autoscore::autoscore(
 
 # Cognitive Data
 
-## Cleaning cognitve data collected from NIH Toolbox Battery and merging with transcription data
+## Cleaning cognitive data collected from NIH Toolbox Battery and merging with transcription data
 
 cog <- rio::import("Cognitive Data/2023-01-20 12.45.01 Assessment Scores.csv")
 
@@ -174,6 +174,8 @@ cog_subtests <- dplyr::full_join(uncorrected, corrected, by = "id") %>%
   dplyr::mutate(., id = as.numeric(id))
 
 
+
+
 ## Creating words-in-noise df
 words_in_noise <- cog1 %>%
   dplyr::filter(inst == "win") %>%
@@ -196,11 +198,19 @@ words_in_noise <- words_in_noise %>%
                 win_l = "win_left_ear") %>%
   dplyr::mutate(id = as.numeric(id))
 
+words_in_noise <- words_in_noise %>%
+  dplyr::filter(id %in% 300:377)
+
+
+
 
 # Merging the cognitive, win, and transcription dfs together
 cleaned_data <- transcriptions_fixed %>%
-  left_join(cog_subtests, by = "id") %>%
-  left_join(words_in_noise, by = "id")
+  left_join(cog_subtests, by = "id")
+
+cleaned_data <- cleaned_data %>%
+  dplyr::left_join(words_in_noise, by = "id")
+
 
 # Removing unneeded items from the environment
 rm(cog, cog_subtests, cog1, corrected, uncorrected, win, words_in_noise, i, new_names)
