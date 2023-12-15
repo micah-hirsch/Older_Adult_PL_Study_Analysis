@@ -173,9 +173,6 @@ names(corrected) <- new_names
 cog_subtests <- dplyr::full_join(uncorrected, corrected, by = "id") %>%
   dplyr::mutate(., id = as.numeric(id))
 
-
-
-
 ## Creating words-in-noise df
 words_in_noise <- cog1 %>%
   dplyr::filter(inst == "win") %>%
@@ -198,11 +195,9 @@ words_in_noise <- words_in_noise %>%
                 win_l = "win_left_ear") %>%
   dplyr::mutate(id = as.numeric(id))
 
+# duplicate entry for participant 327, so we are removing any observations with NA
 words_in_noise <- words_in_noise %>%
-  dplyr::filter(id %in% 300:377)
-
-
-
+  dplyr::filter(!is.na(win_r))
 
 # Merging the cognitive, win, and transcription dfs together
 cleaned_data <- transcriptions_fixed %>%
@@ -211,6 +206,7 @@ cleaned_data <- transcriptions_fixed %>%
 cleaned_data <- cleaned_data %>%
   dplyr::left_join(words_in_noise, by = "id")
 
-
 # Removing unneeded items from the environment
 rm(cog, cog_subtests, cog1, corrected, uncorrected, win, words_in_noise, i, new_names)
+
+
