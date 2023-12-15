@@ -195,7 +195,8 @@ words_in_noise <- words_in_noise %>%
                 win_l = "win_left_ear") %>%
   dplyr::mutate(id = as.numeric(id))
 
-# duplicate entry for participant 327, so we are removing any observations with NA
+# I found a duplicate entry for participant 327, so we are removing them 
+# and any other participants with no win scores
 words_in_noise <- words_in_noise %>%
   dplyr::filter(!is.na(win_r))
 
@@ -209,4 +210,7 @@ cleaned_data <- cleaned_data %>%
 # Removing unneeded items from the environment
 rm(cog, cog_subtests, cog1, corrected, uncorrected, win, words_in_noise, i, new_names)
 
+# Export 
+setwd("~/Documents/Github Repositories/Older Adult PL Study Analysis/Manuscript Analyses")
 
+rio::export(cleaned_data, "cleaned_data.csv")
