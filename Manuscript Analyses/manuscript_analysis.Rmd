@@ -1,0 +1,97 @@
+---
+title: Cognitive and Auditory Predictors of Dysarthric Speech Understanding in Older
+  Adult Listeners
+author: "Lansford, Hirsch, Barrett, & Borrie"
+date: "`r Sys.Date()`"
+output: 
+  github_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+This document contains the analysis code and output for the manuscript entitled "Cognitive and Auditory Predictors of Dysarthric Speech Understanding in Older Adult Listeners". These results will also be presented at the Biannual Motor Speech Conference held in San Diego, CA from February 21-24, 2024.
+
+All data processing and analyses was conducted using R Version 4.3.2
+
+
+```{r, echo = F, warning = F, message = F}
+
+# Loading in needed packages
+library(tidyverse) #install.packages("tidyverse")
+library(rio) #install.packages("rio")
+library(gt) #install.packages("gt")
+library(reshape2) #install.packages("reshape2")
+library(ggcorrplot) #install.packages("ggcorrplot")
+library(patchwork) #install.packages("patchwork")
+library(janitor) #install.packages("janitor")
+library(fs) #install.packages("fs")
+library(furniture) #install.packages("furniture")
+library(caret) #install.packages("caret")
+library(effectsize) #install.packages("effectsize")
+library(parameters) #install.packages("parameters")
+library(performance) #install.packages("performance")
+library(bayestestR) #install.packages("bayestestR)
+library(rstanarm) #install.packages("rstanarm")
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+
+# Functions used in this code
+
+## Function for determining variable importance
+var_imp <- function(mod, label) {
+  varImp(mod)$importance %>%
+    rownames_to_column(var = "Variable") %>%
+    mutate(Overall = Overall/max(Overall)) %>%
+    rename(!!label := Overall, 
+          var = Variable)
+}
+
+## Function for model training
+training <- function(data, method, int) {
+  form = if (isTRUE(int)) {
+    d2 = model.matrix(pwc ~ . * ., data = data)[, -1] %>%
+      as_tibble() %>%
+      janitor::clean_names()
+    d2$pwc = data$pwc
+  } else {
+    d2 = data
+    train(
+      pwc ~.,
+      data = d2,
+      preProcess = c("center", "scale"),
+      method = "repeatedcv",
+      number = 5,
+      repeats = 10
+    )
+  }
+}
+
+```
+
+# Descriptives
+
+## Intelligibility
+
+
+```{r}
+
+
+
+```
+
+
+## Cognition
+
+
+
+## Hearing Threshold
