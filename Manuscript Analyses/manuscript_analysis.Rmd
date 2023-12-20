@@ -84,17 +84,32 @@ training <- function(data, method, int) {
 
 ```{r}
 
+demo <- rio::import("participant_demo.csv")
+
 
 
 ```
 
-
 ## Cognition
-
 
 ```{r}
 
+cog <- rio::import("cleaned_data.csv") %>%
+  dplyr::select(c(id, speaker, list_sort_c:win_l)) %>%
+  dplyr::mutate(best_win = ifelse(win_r < win_l, win_r, win_l)) %>%
+  dplyr::distinct()
 
+age <- demo %>%
+  select(id, age)
+
+cog_scores <- left_join(age, cog, by = "id")
+
+cog_scores %>%
+  dplyr::group_by(speaker) %>%
+  furniture::table1(age, list_sort_c, flanker_c, card_sort_c, vocab_c, pattern_c, 
+                    pic_seq_c, fluid_cog_c, best_win,
+                    test = T, 
+                    export = "cog_score")
 
 ```
 
