@@ -80,8 +80,7 @@ training <- function(data, method, int) {
 
 # Descriptives
 
-## Intelligibility
-
+## Participant Demographics
 
 ```{r}
 
@@ -91,6 +90,16 @@ training <- function(data, method, int) {
 
 
 ## Cognition
+
+
+```{r}
+
+
+
+```
+
+
+## Intelligibility
 
 
 
