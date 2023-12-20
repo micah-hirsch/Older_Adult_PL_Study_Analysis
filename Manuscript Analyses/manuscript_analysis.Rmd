@@ -108,7 +108,7 @@ cog_scores %>%
   dplyr::group_by(speaker) %>%
   furniture::table1(age, list_sort_c, flanker_c, card_sort_c, vocab_c, pattern_c, 
                     pic_seq_c, fluid_cog_c, best_win,
-                    test = T, 
+                    test = T, type = c("simple", "condensed"), 
                     export = "cog_score")
 
 ```
