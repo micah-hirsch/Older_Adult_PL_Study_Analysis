@@ -165,9 +165,34 @@ int_table %>%
 
 ```{r}
 
-# Intelligibiltiy Descriptives Table
+# Intelligibility Descriptives Table
 
+speaker_intel <- pl_int %>%
+  dplyr::mutate(type = as.factor(type),
+                type = fct_relevel(type, "pretest", "posttest")) %>%
+  dplyr::group_by(speaker, type) %>%
+  dplyr::summarize(pwc = mean(mean_pwc),
+                   sd = sd(mean_pwc)) %>%
+  dplyr::ungroup() %>%
+  tidyr::pivot_wider(names_from = speaker,
+                     values_from = c(pwc:sd)) %>%
+  dplyr::relocate(sd_AM1, .after = pwc_AM1) %>%
+  gt::gt() %>%
+    fmt_number(columns = "pwc_AM1":"sd_PDM10", decimals = 2) %>%
+    tab_spanner(label = "AM1",
+                columns = c(pwc_AM1, sd_AM1)) %>%
+    tab_spanner(label = "PDM10",
+                columns = c(pwc_PDM10, sd_PDM10)) %>%
+    cols_label(type = " ",
+               pwc_AM1 = "Mean",
+               sd_AM1 = "SD",
+               pwc_PDM10 = "Mean",
+               sd_PDM10 = "SD")
 
+speaker_intel
+
+speaker_intel %>%
+  gt::gtsave("Tables/intel_des.html")
 
 ```
 
