@@ -106,7 +106,11 @@ age <- demo %>%
 
 # Merging listener age into pl_int
 
-pl_int <- dplyr::left_join(age, pl_int, by = "id")
+pl_int <- dplyr::left_join(age, pl_int, by = "id") 
+
+pl_int <- pl_int %>%
+  dplyr::mutate(type = as.factor(type),
+                type = fct_relevel(type, "pretest", "posttest"))
 
 ```
 
@@ -196,4 +200,104 @@ speaker_intel %>%
 
 ```
 
+### Pretest - Posttest Plot
+
+```{r}
+
+pl_int %>%
+  ggplot() +
+  aes(x = type,
+      y = mean_pwc,
+      group = id) +
+  geom_line(alpha = 0.3) +
+  stat_summary(aes(group = speaker),
+               fun.y = mean, geom = "line", linewidth = 2) +
+  facet_wrap("speaker") +
+  labs(x = "Phase", y = "Intelligibility") +
+  theme_bw() +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+```
+
+# Results
+
+## Correlations
+
+### AM1
+
+```{r}
+
+cor_df <- pl_int %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = mean_pwc) %>%
+  dplyr::mutate(improvement = posttest - pretest) %>%
+  dplyr::select(id, speaker, ends_with("_c"), best_win, pretest, improvement)
+
+AM1_cor <- cor_df %>%
+  dplyr::filter(speaker == "AM1") %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c)) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  dplyr::rename_all(snakecase::to_title_case) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(
+    type = "lower",
+    outline.col = "white",
+    colors = c("#6D9EC1", "white", "#E46726"),
+    lab = TRUE,
+    insig = "blank",
+    title = "Ataxic", 
+    legend.title = "Correlation"
+  )
+  
+AM1_cor
+
+```
+
+### PDM10
+
+```{r}
+
+PDM10_cor <- cor_df %>%
+  dplyr::filter(speaker == "PDM10") %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c)) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  dplyr::rename_all(snakecase::to_title_case) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(
+    type = "lower",
+    outline.col = "white",
+    colors = c("#6D9EC1", "white", "#E46726"),
+    lab = TRUE,
+    insig = "blank",
+    title = "Parkinson's Disease", 
+    legend.title = "Correlation"
+  )
+
+PDM10_cor
+
+```
+
+```{r}
+
+library(patchwork)
+AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
+
+```
 
