@@ -18,7 +18,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This document contains the analysis code and output for the manuscript entitled "Cognitive and Auditory Predictors of Dysarthric Speech Understanding in Older Adult Listeners". These results will also be presented at the Biannual Motor Speech Conference held in San Diego, CA from February 21-24, 2024.
 
-All data processing and analyses was conducted using R Version 4.3.2
+The data preprocessing script can be found in the Manuscript Analyses subdirectory in this repo.
+
+All data processing and analyses was conducted using R Version 4.3.2.
 
 
 ```{r, echo = F, warning = F, message = F}
@@ -42,7 +44,6 @@ library(bayestestR) #install.packages("bayestestR)
 library(rstanarm) #install.packages("rstanarm")
 library(afex) #install.packages("afex")
 
-
 # Load in dataset
 
 demo <- rio::import("participant_demo.csv")
@@ -52,7 +53,7 @@ data <- rio::import("cleaned_data.csv")
 ```
 
 
-```{r, echo = F, warning = F, message = F}
+```{r, warning = F, message = F}
 
 # Functions used in this code
 
@@ -101,7 +102,8 @@ training <- function(data, method, int) {
 ```
 
 
-```{r}
+
+```{r, warning = F, message = F}
 
 # Calculating pretest and posttest intelligibility for the listeners
 pl_int <- data %>%
@@ -130,7 +132,6 @@ pl_int <- pl_int %>%
 ```
 
 
-
 # Descriptives
 
 ## Participant Demographics
@@ -145,7 +146,7 @@ TBD
 
 ## Cognition
 
-```{r}
+```{r, warning = F, message = F}
 
 int_table <- pl_int %>%
   dplyr::filter(type == "pretest") %>%
@@ -182,7 +183,7 @@ int_table %>%
 
 ## Intelligibility
 
-```{r}
+```{r, warning = F, message = F}
 
 # Intelligibility Descriptives Table
 
@@ -217,7 +218,7 @@ speaker_intel %>%
 
 ### Pretest - Posttest Plot
 
-```{r}
+```{r, warning = F, message = F}
 
 pl_int %>%
   ggplot() +
@@ -232,6 +233,8 @@ pl_int %>%
   theme_bw() +
   theme(legend.position = "none", aspect.ratio = 1)
 
+ggsave("Plots/Pre_post.png", plot = last_plot())
+
 ```
 
 # Results
@@ -240,7 +243,7 @@ pl_int %>%
 
 ### AM1
 
-```{r}
+```{r, warning = F, message = F}
 
 cor_df <- pl_int %>%
   tidyr::pivot_wider(names_from = type,
@@ -278,7 +281,7 @@ AM1_cor
 
 ### PDM10
 
-```{r}
+```{r, warning = F, message = F}
 
 PDM10_cor <- cor_df %>%
   dplyr::filter(speaker == "PDM10") %>%
@@ -308,7 +311,7 @@ PDM10_cor
 
 ```
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 
 library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
@@ -318,7 +321,7 @@ ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
 
 ## Pre-Post Change
 
-```{r}
+```{r, warning = F, message = F}
 
 cor_df %>% 
   dplyr::select(id, speaker, pretest, posttest) %>% 
