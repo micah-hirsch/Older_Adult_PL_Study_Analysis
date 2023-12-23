@@ -129,6 +129,20 @@ pl_int <- pl_int %>%
   dplyr::mutate(type = as.factor(type),
                 type = fct_relevel(type, "pretest", "posttest"))
 
+cor_df <- pl_int %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = mean_pwc) %>%
+  dplyr::mutate(improvement = posttest - pretest) %>%
+  dplyr::select(id, speaker, ends_with("_c"), best_win, pretest, posttest, improvement)
+
+```
+
+
+```{r, echo = F, message = F, warning = F}
+
+# removing unneeded objects from the environment
+rm(age)
+
 ```
 
 
@@ -145,6 +159,8 @@ TBD
 ```
 
 ## Cognition
+
+In this study, listeners were assigned to one of two speakers for perceptual training: a speaker with Ataxic dysarthria (AM1) or a speaker with Parkinson's disease (PDM10). Means and standard deviation for listener age, cognition, and word in noise hearing threshold for each condition are presented below. Wilcoxon rank sum tests were performed for each of the measures. None of the cognition or hearing measures were significantly different between the two groups. 
 
 ```{r, warning = F, message = F}
 
@@ -182,6 +198,8 @@ int_table %>%
 ```
 
 ## Intelligibility
+
+Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p < .001, d = 1.01).
 
 ```{r, warning = F, message = F}
 
@@ -237,19 +255,40 @@ ggsave("Plots/Pre_post.png", plot = last_plot())
 
 ```
 
+```{r}
+
+cor_df %>% 
+  dplyr::select(id, speaker, pretest, posttest) %>% 
+  tidyr::pivot_longer(pretest:posttest) %>% 
+  dplyr::group_by(speaker) %>% 
+  dplyr::group_nest() %>% 
+  dplyr::mutate(
+    mod = map(data, ~afex::aov_4(value ~ 1 + (name|id), data = .x))
+  ) %>% 
+  pull(mod)
+
+cor_df %>% 
+  dplyr::select(id, speaker, pretest, posttest) %>% 
+  tidyr::pivot_longer(pretest:posttest) %>% 
+  dplyr::group_by(speaker) %>% 
+  dplyr::group_nest() %>% 
+  dplyr::mutate(
+    mod = map(data, ~effectsize::cohens_d(value ~ name, data = .x))
+  ) %>% 
+  pull(mod)
+
+```
+
+
 # Results
 
 ## Correlations
 
+The correlation matricies between all the cognitive measures, hearing threshold, initial intelligibility, and intelligibility improvement were conducted for each speaker condition.
+
 ### AM1
 
 ```{r, warning = F, message = F}
-
-cor_df <- pl_int %>%
-  tidyr::pivot_wider(names_from = type,
-                     values_from = mean_pwc) %>%
-  dplyr::mutate(improvement = posttest - pretest) %>%
-  dplyr::select(id, speaker, ends_with("_c"), best_win, pretest, posttest, improvement)
 
 AM1_cor <- cor_df %>%
   dplyr::filter(speaker == "AM1") %>%
