@@ -43,61 +43,15 @@ library(performance) #install.packages("performance")
 library(bayestestR) #install.packages("bayestestR)
 library(rstanarm) #install.packages("rstanarm")
 library(afex) #install.packages("afex")
+library(glmnet) #install.packages("glmnet")
 
-# Load in dataset
+# Load in datasets
 
+## Listener Demographic Information
 demo <- rio::import("participant_demo.csv")
 
+## Listener Intelligibility and Cognition Scores
 data <- rio::import("cleaned_data.csv")
-
-```
-
-
-```{r, warning = F, message = F}
-
-# Functions used in this code
-
-## Plot importance function
-plot_importance = function(mods, labels){
-  map2(mods, labels, ~var_imp(.x, .y)) %>% 
-    reduce(full_join, by = "var") %>% 
-    ungroup() %>% 
-    pivot_longer(-var) %>% 
-    group_by(var) %>% 
-    mutate(avg_imp = mean(value, na.rm=TRUE)) %>% 
-    ungroup() %>% 
-    arrange(avg_imp) %>% 
-    mutate(var = fct_inorder(var))
-}
-
-## Function for determining variable importance
-var_imp <- function(mod, label) {
-  varImp(mod)$importance %>%
-    rownames_to_column(var = "Variable") %>%
-    mutate(Overall = Overall/max(Overall)) %>%
-    rename(!!label := Overall, 
-          var = Variable)
-}
-
-## Function for model training
-training <- function(data, method, int) {
-  form = if (isTRUE(int)) {
-    d2 = model.matrix(pwc ~ . * ., data = data)[, -1] %>%
-      as_tibble() %>%
-      janitor::clean_names()
-    d2$pwc = data$pwc
-  } else {
-    d2 = data
-    train(
-      pwc ~.,
-      data = d2,
-      preProcess = c("center", "scale"),
-      method = "repeatedcv",
-      number = 5,
-      repeats = 10
-    )
-  }
-}
 
 ```
 
@@ -141,7 +95,7 @@ cor_df <- pl_int %>%
 ```{r, echo = F, message = F, warning = F}
 
 # removing unneeded objects from the environment
-rm(age)
+rm(age, data)
 
 ```
 
@@ -358,41 +312,119 @@ ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
 
 ```
 
-## Pre-Post Change
-
-```{r, warning = F, message = F}
-
-cor_df %>% 
-  dplyr::select(id, speaker, pretest, posttest) %>% 
-  tidyr::pivot_longer(pretest:posttest) %>% 
-  dplyr::group_by(speaker) %>% 
-  dplyr::group_nest() %>% 
-  dplyr::mutate(
-    mod = map(data, ~afex::aov_4(value ~ 1 + (name|id), data = .x))
-  ) %>% 
-  pull(mod)
-
-cor_df %>% 
-  dplyr::select(id, speaker, pretest, posttest) %>% 
-  tidyr::pivot_longer(pretest:posttest) %>% 
-  dplyr::group_by(speaker) %>% 
-  dplyr::group_nest() %>% 
-  dplyr::mutate(
-    mod = map(data, ~effectsize::cohens_d(value ~ name, data = .x))
-  ) %>% 
-  pull(mod)
-
-```
-
 ## Models of Initial Intelligibility
-
-### Cognition
 
 TBD
 
+```{r, warning = F, message = F}
+
+# Functions used in this code
+
+## Plot importance function
+plot_importance = function(mods, labels){
+  map2(mods, labels, ~var_imp(.x, .y)) %>% 
+    reduce(full_join, by = "var") %>% 
+    ungroup() %>% 
+    pivot_longer(-var) %>% 
+    group_by(var) %>% 
+    mutate(avg_imp = mean(value, na.rm=TRUE)) %>% 
+    ungroup() %>% 
+    arrange(avg_imp) %>% 
+    mutate(var = fct_inorder(var))
+}
+
+## Function for determining variable importance
+var_imp <- function(mod, label) {
+  varImp(mod)$importance %>%
+    rownames_to_column(var = "Variable") %>%
+    mutate(Overall = Overall/max(Overall)) %>%
+    rename(!!label := Overall, 
+          var = Variable)
+}
+
+## Function for model training
+training <- function(data, method, int) {
+  form = if (isTRUE(int)) {
+    d2 = model.matrix(mean_pwc ~ . * ., data = data)[, -1] %>%
+      as_tibble() %>%
+      janitor::clean_names()
+    d2$mean_pwc = data$mean_pwc
+  } else {
+    d2 = data
+    train(
+      mean_pwc ~ ., 
+      data = d2, 
+      preProcess = c("center", "scale"),
+      method = method, 
+      trControl = caret::trainControl(
+        method = "repeatedcv",
+        number = 5,
+        repeats = 10
+    ))
+  }
+}
+
+```
+
+
 ```{r}
 
+set.seed(7036)
 
+mod_fun = function(speaker, type){
+  subsetted = pl_int %>% 
+    filter(type == {{type}}) %>% 
+    filter(speaker == {{speaker}}) %>% 
+    select(mean_pwc, ends_with("_c"), best_win) %>% 
+    drop_na(mean_pwc, ends_with("_c"), best_win) %>% 
+    select(-contains("fluid"))
+  
+  mod.1 = training(subsetted, "glmnet", int = FALSE)
+  mod.2 = training(subsetted, "glmnet", int = TRUE)
+  
+  return(list(mod.1, mod.2))
+}
+
+plot_fun = function(mods, title){
+  plot_importance(
+    mods = mods,
+    labels = c("main", "int")
+  ) %>% 
+    drop_na(value) %>% 
+    mutate(name = factor(
+      name, 
+      levels = c("main", "int"),
+      labels = c(
+        paste0("Main Effects"),
+        paste0("Interactions")
+    ))) %>% 
+    filter(name == "Interactions") %>% 
+    mutate(var = str_replace(var, "flanker_c", "Inhibitory Control of Attention"),
+           var = str_replace(var, "card_sort_c", "Cognitive Flexibility"),
+           var = str_replace(var, "vocab_c", "Vocabulary Knowledge"),
+           var = str_replace(var, "pattern_c", "Processing Speed"),
+           var = str_replace(var, "list_sort_c", "Working Memory"),
+           var = str_replace(var, "pic_seq_c", "Picture Sequence Memory"),
+           var = str_replace(var, "best_win", "Words in Noise Threshold"),
+           var = str_replace(var, "_", " x ")) %>% 
+    arrange(value) %>% 
+    mutate(var = fct_inorder(var)) %>% 
+    ggplot(aes(x = value, y = var, color = value)) +
+    geom_segment(aes(xend = 0, yend = var)) +
+    geom_point(size = 2) +
+    facet_wrap(~name, scales = "free") +
+    labs(x = "Relative Importance",
+         y = "",
+         title = {{title}}) +
+    scale_color_viridis_c(option = "magma", end = .8) +
+    theme(plot.title.position = "plot")
+}
+
+mods1 = mod_fun("AM1", "pretest")
+mods2 = mod_fun("PDM10", "pretest")
+
+p1 = plot_fun(mods1, "a) Ataxic")
+p2 = plot_fun(mods2, "b) PD")
 
 ```
 
