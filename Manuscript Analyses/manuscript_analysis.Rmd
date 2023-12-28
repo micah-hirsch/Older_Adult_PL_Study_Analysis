@@ -64,11 +64,13 @@ pl_int <- data %>%
   dplyr::group_by(id, speaker, type) %>%
   dplyr::mutate(pwc = (sum(correct_words)/sum(target_number))*100,
                 best_win = ifelse(win_r < win_l, win_r, win_l)) %>%
-  dplyr::summarize(mean_pwc = mean(pwc, na.rm = T),
+  dplyr::summarize(pwc = mean(pwc, na.rm = T),
                    across(c(contains("_c"), contains("_u"), contains("win")),
                           ~first(.x)
                           )) %>%
-  dplyr::ungroup()
+  dplyr::ungroup() %>%
+  dplyr::mutate(type = as.factor(type),
+                type = fct_relevel(type, "pretest", "posttest"))
 
 # Subsetting age from demo df
 
@@ -79,13 +81,10 @@ age <- demo %>%
 
 pl_int <- dplyr::left_join(age, pl_int, by = "id") 
 
-pl_int <- pl_int %>%
-  dplyr::mutate(type = as.factor(type),
-                type = fct_relevel(type, "pretest", "posttest"))
 
 cor_df <- pl_int %>%
   tidyr::pivot_wider(names_from = type,
-                     values_from = mean_pwc) %>%
+                     values_from = pwc) %>%
   dplyr::mutate(improvement = posttest - pretest) %>%
   dplyr::select(id, speaker, ends_with("_c"), best_win, pretest, posttest, improvement)
 
@@ -118,7 +117,7 @@ In this study, listeners were assigned to one of two speakers for perceptual tra
 
 ```{r, warning = F, message = F}
 
-int_table <- pl_int %>%
+cog_table <- pl_int %>%
   dplyr::filter(type == "pretest") %>%
   dplyr::select(id, speaker, age, ends_with("_c"), best_win) %>%
   dplyr::select(-fluid_cog_c) %>%
@@ -144,9 +143,9 @@ int_table <- pl_int %>%
   add_p() %>%
   as_gt() 
 
-int_table
+cog_table
 
-int_table %>%
+cog_table %>%
   gt::gtsave("Tables/means_tabel.html")
 
 ```
@@ -163,23 +162,23 @@ speaker_intel <- pl_int %>%
   dplyr::mutate(type = as.factor(type),
                 type = fct_relevel(type, "pretest", "posttest")) %>%
   dplyr::group_by(speaker, type) %>%
-  dplyr::summarize(pwc = mean(mean_pwc),
-                   sd = sd(mean_pwc)) %>%
+  dplyr::summarize(m_pwc = mean(pwc),
+                   sd_pwc = sd(pwc)) %>%
   dplyr::ungroup() %>%
   tidyr::pivot_wider(names_from = speaker,
-                     values_from = c(pwc:sd)) %>%
-  dplyr::relocate(sd_AM1, .after = pwc_AM1) %>%
+                     values_from = c(m_pwc:sd_pwc)) %>%
+  dplyr::relocate(sd_pwc_AM1, .after = m_pwc_AM1) %>%
   gt::gt() %>%
-    fmt_number(columns = "pwc_AM1":"sd_PDM10", decimals = 2) %>%
+    fmt_number(columns = "m_pwc_AM1":"sd_pwc_PDM10", decimals = 2) %>%
     tab_spanner(label = "AM1",
-                columns = c(pwc_AM1, sd_AM1)) %>%
+                columns = c(m_pwc_AM1, sd_pwc_AM1)) %>%
     tab_spanner(label = "PDM10",
-                columns = c(pwc_PDM10, sd_PDM10)) %>%
+                columns = c(m_pwc_PDM10, sd_pwc_PDM10)) %>%
     cols_label(type = " ",
-               pwc_AM1 = "Mean",
-               sd_AM1 = "SD",
-               pwc_PDM10 = "Mean",
-               sd_PDM10 = "SD")
+               m_pwc_AM1 = "Mean",
+               sd_pwc_AM1 = "SD",
+               m_pwc_PDM10 = "Mean",
+               sd_pwc_PDM10 = "SD")
 
 speaker_intel
 
@@ -195,7 +194,7 @@ speaker_intel %>%
 pl_int %>%
   ggplot() +
   aes(x = type,
-      y = mean_pwc,
+      y = pwc,
       group = id) +
   geom_line(alpha = 0.3) +
   stat_summary(aes(group = speaker),
@@ -309,6 +308,8 @@ PDM10_cor
 library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
+
+rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
 
 ```
 
