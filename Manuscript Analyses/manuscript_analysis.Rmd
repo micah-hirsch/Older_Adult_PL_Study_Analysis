@@ -346,14 +346,14 @@ var_imp <- function(mod, label) {
 ## Function for model training
 training <- function(data, method, int) {
   form = if (isTRUE(int)) {
-    d2 = model.matrix(mean_pwc ~ . * ., data = data)[, -1] %>%
+    d2 = model.matrix(pwc ~ . * ., data = data)[, -1] %>%
       as_tibble() %>%
       janitor::clean_names()
-    d2$mean_pwc = data$mean_pwc
+    d2$pwc = data$pwc
   } else {
     d2 = data
     train(
-      mean_pwc ~ ., 
+      pwc ~ ., 
       data = d2, 
       preProcess = c("center", "scale"),
       method = method, 
@@ -376,8 +376,8 @@ mod_fun = function(speaker, type){
   subsetted = pl_int %>% 
     filter(type == {{type}}) %>% 
     filter(speaker == {{speaker}}) %>% 
-    select(mean_pwc, ends_with("_c"), best_win) %>% 
-    drop_na(mean_pwc, ends_with("_c"), best_win) %>% 
+    select(pwc, ends_with("_c"), best_win) %>% 
+    drop_na(pwc, ends_with("_c"), best_win) %>% 
     select(-contains("fluid"))
   
   mod.1 = training(subsetted, "glmnet", int = FALSE)
