@@ -315,7 +315,6 @@ rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
 
 ## Models of Initial Intelligibility
 
-TBD
 
 ```{r, warning = F, message = F}
 
@@ -490,7 +489,7 @@ effect_data <- function(mod){
     mutate(preds = predict(mod[[2]]))
 }
 
-effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 5) {
+effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
   dat = effect_data(mod)
   
   if (isFALSE(int)){
@@ -539,4 +538,84 @@ effect_plot(mods2, vocab_c, card_sort_c)
 
 ```
 
+## Models of Cognition and Intelligibility Change
+
+```{r}
+
+mod_fun2 <- function(speaker, title) {
+  subsetted = cor_df %>%
+    dplyr::select(-c(fluid_cog_c, improvement)) %>%
+    dplyr::mutate(pwc_diff = resid(lm(posttest ~ pretest))) %>%
+    dplyr::select(pwc_diff, ends_with("_c"), speaker) %>%
+    tidyr::drop_na(pwc_diff, ends_with("_c"), speaker) %>%
+    dplyr::filter(speaker == {{speaker}}) %>%
+    dplyr::select(-speaker) %>%
+    rename(pwc = pwc_diff)
+  
+  mod.1 = training(subsetted, "glmnet", int = F)
+  mod.2 = training(subsetted, "glmnet", int = T)
+  
+  return(list(mod.1, mod.2))
+  
+}
+
+mods12 = mod_fun2("AM1")
+mods22 = mod_fun2("PDM10")
+
+p12 = plot_fun(mods12, "a) Ataxic")
+p22 = plot_fun(mods22, "b) PD")
+
+p12
+```
+
+```{r}
+
+p22
+
+```
+
+```{r}
+
+AM1_change_mod <- in_and_out(mods12, "Ataxic")
+
+PDM10_change_mod <- in_and_out(mods22, "PD")
+
+change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
+
+change_mods %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+```
+
+```{r}
+
+t_for_diff(mods12)
+t_for_diff(mods22)
+
+```
+
+```{r}
+
+## AM1 Effect Plots
+
+effect_plot(mods12, list_sort_c, vocab_c)
+effect_plot(mods12, vocab_c, list_sort_c)
+effect_plot(mods12, list_sort_c, int = F)
+effect_plot(mods12, pattern_c, int = F)
+effect_plot(mods12, list_sort_c, flanker_c)
+effect_plot(mods12, flanker_c, list_sort_c)
+
+## PDM10 Effect Plots
+
+effect_plot(mods22, vocab_c, pic_seq_c)
+effect_plot(mods22, pic_seq_c, vocab_c)
+effect_plot(mods22, vocab_c, int = F)
+effect_plot(mods22, list_sort_c, flanker_c)
+effect_plot(mods22, flanker_c, list_sort_c)
+
+```
 
