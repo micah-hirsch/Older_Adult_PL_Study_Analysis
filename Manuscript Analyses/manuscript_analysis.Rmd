@@ -352,6 +352,7 @@ training <- function(data, method, int) {
     d2$pwc = data$pwc
   } else {
     d2 = data
+  }
     train(
       pwc ~ ., 
       data = d2, 
@@ -361,8 +362,8 @@ training <- function(data, method, int) {
         method = "repeatedcv",
         number = 5,
         repeats = 10
-    ))
-  }
+    )
+  )
 }
 
 ```
@@ -428,4 +429,114 @@ p1 = plot_fun(mods1, "a) Ataxic")
 p2 = plot_fun(mods2, "b) PD")
 
 ```
+
+```{r}
+
+p2
+
+```
+
+
+```{r}
+
+in_and_out <- function(mods, speaker) {
+  out_sample_r2 = map_dbl(mods, ~max(.x$results$Rsquared))
+  out_sample_rmse = map_dbl(mods, ~min(.x$results$RMSE)) 
+  tibble(
+    speaker = speaker,
+    mods = c("Main Effects", "Interactions"),
+    out_sample_r2,
+    out_sample_rmse
+  )
+}
+
+AM1_initial_mod <- in_and_out(mods1, "Ataxic")
+
+PDM10_initial_mod <- in_and_out(mods2, "PD")
+
+initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
+
+initial_mods %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+```
+
+
+```{r}
+
+t_for_diff <- function(mods){
+  samps = resamples(list(
+    main = mods[[1]],
+    int = mods[[2]]
+  ))
+  summary(samps)
+  diff(samps) %>%
+    summary()
+}
+
+t_for_diff(mods1)
+t_for_diff(mods2)
+
+```
+
+```{r}
+
+effect_data <- function(mod){
+  mod[[2]]$trainingData %>%
+    mutate(preds = predict(mod[[2]]))
+}
+
+effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 5) {
+  dat = effect_data(mod)
+  
+  if (isFALSE(int)){
+    dat %>%
+      ggplot() +
+      aes(x={{var}}, 
+          y = .outcome) +
+      geom_point() +
+      geom_smooth(method = "lm")
+  } else {
+    dat %>%
+      ggplot() +
+      aes(x = {{var}},
+          y= .outcome,
+          group = cut_interval({{var2}}, num),
+          color = cut_interval({{var2}}, num)) +
+      geom_point() +
+      geom_smooth(method = "lm") +
+      theme(legend.position = "bottom")
+  }
+}
+
+# AM1 Effect Plots
+
+effect_plot(mods1, pic_seq_c, best_win)
+effect_plot(mods1, best_win, pic_seq_c)
+effect_plot(mods1, best_win, int = F)
+effect_plot(mods1, list_sort_c, vocab_c)
+effect_plot(mods1, vocab_c, list_sort_c)
+effect_plot(mods1, list_sort_c, pattern_c)
+effect_plot(mods1, pattern_c, list_sort_c)
+
+# PDM10 Effect Plots
+
+effect_plot(mods2, vocab_c, pattern_c)
+effect_plot(mods2, pattern_c, vocab_c)
+effect_plot(mods2, best_win, int = F)
+effect_plot(mods2, flanker_c, best_win)
+effect_plot(mods2, best_win, flanker_c)
+effect_plot(mods2, list_sort_c, pattern_c)
+effect_plot(mods2, pattern_c, list_sort_c)
+effect_plot(mods2, vocab_c, pic_seq_c)
+effect_plot(mods2, pic_seq_c, vocab_c)
+effect_plot(mods2, card_sort_c, vocab_c)
+effect_plot(mods2, vocab_c, card_sort_c)
+
+```
+
 
