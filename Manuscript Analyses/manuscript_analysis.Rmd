@@ -103,11 +103,25 @@ rm(age, data)
 
 ## Participant Demographics
 
-TBD
+The overall demographic information for the participants are below.
 
 ```{r}
 
+demo_table <- demo %>%
+  dplyr::select(-id) %>%
+  tbl_summary(type = list(age ~ "continuous",
+                          gender ~ "categorical",
+                          race ~ "categorical",
+                          ethnicity ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd})",
+                              all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2))) %>%
+  as_gt()
 
+demo_table
+
+demo_table %>%
+  gt::gtsave("Tables/demo_table.html")
 
 ```
 
