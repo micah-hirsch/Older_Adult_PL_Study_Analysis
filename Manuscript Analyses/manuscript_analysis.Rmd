@@ -20,7 +20,7 @@ This document contains the analysis code and output for the manuscript entitled 
 
 The data preprocessing script can be found in the Manuscript Analyses subdirectory in this repo.
 
-All data processing and analyses was conducted using R Version 4.3.2.
+All data processing and analyses were conducted using R Version 4.3.2.
 
 
 ```{r, echo = F, warning = F, message = F}
@@ -55,6 +55,8 @@ data <- rio::import("cleaned_data.csv")
 
 ```
 
+
+First, pretest and posttest intelligibility was calculated as percent words correct (pwc) for each listener. 
 
 
 ```{r, warning = F, message = F}
@@ -103,7 +105,7 @@ rm(age, data)
 
 ## Participant Demographics
 
-The overall demographic information for the participants are below.
+A total of 60 older adult listeners participated in the study. The overall demographic information for the participants are below. 
 
 ```{r}
 
@@ -125,9 +127,18 @@ demo_table %>%
 
 ```
 
+```{r, echo = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+
+rm(demo)
+
+```
+
+
 ## Cognition
 
-In this study, listeners were assigned to one of two speakers for perceptual training: a speaker with Ataxic dysarthria (AM1) or a speaker with Parkinson's disease (PDM10). Means and standard deviation for listener age, cognition, and word in noise hearing threshold for each condition are presented below. Wilcoxon rank sum tests were performed for each of the measures. None of the cognition or hearing measures were significantly different between the two groups. 
+In this study, listeners were assigned to one of two speakers for perceptual training: a speaker with Ataxic dysarthria (AM1) or a speaker with Parkinson's disease (PDM10). Means and standard deviation for listener age, cognition, and word in noise hearing threshold for each condition are presented below. Wilcoxon rank sum tests were performed for each of the measures. None of the cognition or hearing measures were significantly different between the two groups of listeners. 
 
 ```{r, warning = F, message = F}
 
@@ -215,7 +226,7 @@ pl_int %>%
                fun.y = mean, geom = "line", linewidth = 2) +
   facet_wrap("speaker") +
   labs(x = "Phase", y = "Intelligibility") +
-  theme_bw() +
+  theme_classic() +
   theme(legend.position = "none", aspect.ratio = 1)
 
 ggsave("Plots/Pre_post.png", plot = last_plot())
@@ -246,7 +257,6 @@ cor_df %>%
 
 ```
 
-
 # Results
 
 ## Correlations
@@ -257,6 +267,13 @@ The correlation matricies between all the cognitive measures, hearing threshold,
 
 ```{r, warning = F, message = F}
 
+# Customize plot colors
+
+library(LaCroixColoR) #remotes::install_github("johannesbjork/LaCroixColoR")
+my_pal <- lacroix_palette("PeachPear", n = 15, type = "continuous")
+my_pal <- rev(my_pal)
+
+# AM1 Cor Plot
 AM1_cor <- cor_df %>%
   dplyr::filter(speaker == "AM1") %>%
   dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
@@ -274,8 +291,9 @@ AM1_cor <- cor_df %>%
   ggcorrplot(
     type = "lower",
     outline.col = "white",
-    colors = c("#6D9EC1", "white", "#E46726"),
+    colors = c(my_pal[1], "white", my_pal[15]),
     lab = TRUE,
+    sig.level = 0.05,
     insig = "blank",
     title = "Ataxic", 
     legend.title = "Correlation"
@@ -289,6 +307,7 @@ AM1_cor
 
 ```{r, warning = F, message = F}
 
+# PDM10 Cor Plot
 PDM10_cor <- cor_df %>%
   dplyr::filter(speaker == "PDM10") %>%
   dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
@@ -306,7 +325,7 @@ PDM10_cor <- cor_df %>%
   ggcorrplot(
     type = "lower",
     outline.col = "white",
-    colors = c("#6D9EC1", "white", "#E46726"),
+    colors = c(my_pal[1], "white", my_pal[15]),
     lab = TRUE,
     insig = "blank",
     title = "Parkinson's Disease", 
@@ -323,7 +342,7 @@ library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
 
-rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
+rm(AM1_cor, PDM10_cor, cog_table, speaker_intel, demo_table)
 
 ```
 
@@ -381,6 +400,7 @@ training <- function(data, method, int) {
 
 ```
 
+### AM1 Models
 
 ```{r}
 
@@ -431,24 +451,16 @@ plot_fun = function(mods, title){
     labs(x = "Relative Importance",
          y = "",
          title = {{title}}) +
-    scale_color_viridis_c(option = "magma", end = .8) +
+    scale_color_gradientn(colors = my_pal) +
+    theme_bw() +
     theme(plot.title.position = "plot")
 }
 
 mods1 = mod_fun("AM1", "pretest")
-mods2 = mod_fun("PDM10", "pretest")
-
 p1 = plot_fun(mods1, "a) Ataxic")
-p2 = plot_fun(mods2, "b) PD")
+p1
 
 ```
-
-```{r}
-
-p2
-
-```
-
 
 ```{r}
 
@@ -465,16 +477,14 @@ in_and_out <- function(mods, speaker) {
 
 AM1_initial_mod <- in_and_out(mods1, "Ataxic")
 
-PDM10_initial_mod <- in_and_out(mods2, "PD")
-
-initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
-
-initial_mods %>%
+AM1_initial_mod %>%
   gt::gt() %>%
   cols_label(speaker = "Speaker",
              mods = "Model Specification",
              out_sample_r2 = "R\U00B2",
              out_sample_rmse = "RMSE")
+
+
 
 ```
 
@@ -492,9 +502,9 @@ t_for_diff <- function(mods){
 }
 
 t_for_diff(mods1)
-t_for_diff(mods2)
 
 ```
+
 
 ```{r}
 
@@ -536,6 +546,30 @@ effect_plot(mods1, vocab_c, list_sort_c)
 effect_plot(mods1, list_sort_c, pattern_c)
 effect_plot(mods1, pattern_c, list_sort_c)
 
+
+```
+
+
+### PDM10 Models
+
+```{r}
+
+mods2 = mod_fun("PDM10", "pretest")
+p2 = plot_fun(mods2, "b) PD")
+p2
+
+```
+
+
+```{r}
+
+PDM10_initial_mod <- in_and_out(mods2, "PD")
+
+```
+
+
+```{r}
+
 # PDM10 Effect Plots
 
 effect_plot(mods2, vocab_c, pattern_c)
@@ -552,7 +586,10 @@ effect_plot(mods2, vocab_c, card_sort_c)
 
 ```
 
+
 ## Models of Cognition and Intelligibility Change
+
+### AM1 Models
 
 ```{r}
 
@@ -574,17 +611,8 @@ mod_fun2 <- function(speaker, title) {
 }
 
 mods12 = mod_fun2("AM1")
-mods22 = mod_fun2("PDM10")
-
 p12 = plot_fun(mods12, "a) Ataxic")
-p22 = plot_fun(mods22, "b) PD")
-
 p12
-```
-
-```{r}
-
-p22
 
 ```
 
@@ -592,11 +620,7 @@ p22
 
 AM1_change_mod <- in_and_out(mods12, "Ataxic")
 
-PDM10_change_mod <- in_and_out(mods22, "PD")
-
-change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
-
-change_mods %>%
+AM1_change_mod %>%
   gt::gt() %>%
   cols_label(speaker = "Speaker",
              mods = "Model Specification",
@@ -608,7 +632,6 @@ change_mods %>%
 ```{r}
 
 t_for_diff(mods12)
-t_for_diff(mods22)
 
 ```
 
@@ -623,6 +646,44 @@ effect_plot(mods12, pattern_c, int = F)
 effect_plot(mods12, list_sort_c, flanker_c)
 effect_plot(mods12, flanker_c, list_sort_c)
 
+
+```
+
+
+### PDM10 Models
+
+```{r}
+
+mods22 = mod_fun2("PDM10")
+p22 = plot_fun(mods22, "b) PD")
+p22
+
+```
+
+
+```{r}
+
+PDM10_change_mod <- in_and_out(mods22, "PD")
+
+PDM10_change_mod %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+```
+
+
+```{r}
+
+t_for_diff(mods22)
+
+```
+
+
+```{r}
+
 ## PDM10 Effect Plots
 
 effect_plot(mods22, vocab_c, pic_seq_c)
@@ -632,4 +693,31 @@ effect_plot(mods22, list_sort_c, flanker_c)
 effect_plot(mods22, flanker_c, list_sort_c)
 
 ```
+
+
+
+```{r, echo = F, warning = F, message = F}
+
+initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
+
+mods_table %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
+
+change_mods %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+```
+
+
+
 
