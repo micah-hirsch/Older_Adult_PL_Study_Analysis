@@ -4,7 +4,7 @@ title: Cognitive and Auditory Predictors of Dysarthric Speech Understanding in O
 author: "Lansford, Hirsch, Barrett, & Borrie"
 date: "`r Sys.Date()`"
 output: 
-  github_document:
+  html_document:
     code_folding: hide
     toc: true
     toc_float: true
@@ -717,7 +717,7 @@ effect_plot(mods22, flanker_c, list_sort_c) # Inhibitory Control * Working Memor
 
 
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 
 # Merging Model summaries together
 change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
