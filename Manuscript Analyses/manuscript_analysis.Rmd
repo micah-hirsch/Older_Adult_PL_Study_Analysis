@@ -131,7 +131,7 @@ demo_table %>%
 
 # Removing unneeded items from the environment
 
-rm(demo)
+rm(demo, demo_table)
 
 ```
 
@@ -342,7 +342,7 @@ library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
 
-rm(AM1_cor, PDM10_cor, cog_table, speaker_intel, demo_table)
+rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
 
 ```
 
@@ -538,17 +538,16 @@ effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
 
 # AM1 Effect Plots
 
-effect_plot(mods1, pic_seq_c, best_win)
-effect_plot(mods1, best_win, pic_seq_c)
-effect_plot(mods1, best_win, int = F)
-effect_plot(mods1, list_sort_c, vocab_c)
-effect_plot(mods1, vocab_c, list_sort_c)
-effect_plot(mods1, list_sort_c, pattern_c)
-effect_plot(mods1, pattern_c, list_sort_c)
+effect_plot(mods1, pic_seq_c, best_win) # Picture Sequence Memory * Words in Noise
+effect_plot(mods1, best_win, pic_seq_c) # Words in Noise * Picture Sequence Memory
+effect_plot(mods1, best_win, int = F) # Words in Noise
+effect_plot(mods1, list_sort_c, vocab_c) # Working Memory * Receptive Vocab
+effect_plot(mods1, vocab_c, list_sort_c) # Receptive Vocab * Working Memory
+effect_plot(mods1, list_sort_c, pattern_c) # Working Memory * Processing Speed
+effect_plot(mods1, pattern_c, list_sort_c) # Processing Speed * Working Memory
 
 
 ```
-
 
 ### PDM10 Models
 
@@ -565,6 +564,14 @@ p2
 
 PDM10_initial_mod <- in_and_out(mods2, "PD")
 
+PDM10_initial_mod %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+
 ```
 
 
@@ -572,17 +579,31 @@ PDM10_initial_mod <- in_and_out(mods2, "PD")
 
 # PDM10 Effect Plots
 
-effect_plot(mods2, vocab_c, pattern_c)
-effect_plot(mods2, pattern_c, vocab_c)
-effect_plot(mods2, best_win, int = F)
-effect_plot(mods2, flanker_c, best_win)
-effect_plot(mods2, best_win, flanker_c)
-effect_plot(mods2, list_sort_c, pattern_c)
-effect_plot(mods2, pattern_c, list_sort_c)
-effect_plot(mods2, vocab_c, pic_seq_c)
-effect_plot(mods2, pic_seq_c, vocab_c)
-effect_plot(mods2, card_sort_c, vocab_c)
-effect_plot(mods2, vocab_c, card_sort_c)
+effect_plot(mods2, vocab_c, pattern_c) # Receptive Vocab * Processing Speed
+effect_plot(mods2, pattern_c, vocab_c) # Processing Speed * Receptive Vocab
+effect_plot(mods2, best_win, int = F) # Words in Noise
+effect_plot(mods2, flanker_c, best_win) # Inhibitory Control * Words in Noise
+effect_plot(mods2, best_win, flanker_c) # Words in Noise * Inhibitory Control
+effect_plot(mods2, list_sort_c, pattern_c) # Working Memory * Processing Speed
+effect_plot(mods2, pattern_c, list_sort_c) # Processing Speech * Working Memory
+effect_plot(mods2, vocab_c, pic_seq_c) # Receptive Vocab * Picture Sequence Memory
+effect_plot(mods2, pic_seq_c, vocab_c) # Picture Sequence Memory * Receptive Vocab
+effect_plot(mods2, card_sort_c, vocab_c) # Cognitive Flexibility * Receptive Vocab
+effect_plot(mods2, vocab_c, card_sort_c) # Receptive Vocab * Cognitive Flexibility
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+# Mergining initial model summaries together
+initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
+
+# Combining initial model figures and saving
+p1 / p2
+ggsave("Plots/Initial_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
+
+# Removing unneeded items from Environment
+rm(p1, p2, mods1, mods2, AM1_initial_mod, PDM10_initial_mod)
 
 ```
 
@@ -639,12 +660,12 @@ t_for_diff(mods12)
 
 ## AM1 Effect Plots
 
-effect_plot(mods12, list_sort_c, vocab_c)
-effect_plot(mods12, vocab_c, list_sort_c)
-effect_plot(mods12, list_sort_c, int = F)
-effect_plot(mods12, pattern_c, int = F)
-effect_plot(mods12, list_sort_c, flanker_c)
-effect_plot(mods12, flanker_c, list_sort_c)
+effect_plot(mods12, list_sort_c, vocab_c) # Working Memory * Receptive Vocab
+effect_plot(mods12, vocab_c, list_sort_c) # Receptive Vocab * Working Memory
+effect_plot(mods12, list_sort_c, int = F) # Working Memory
+effect_plot(mods12, pattern_c, int = F) # Processing Speed
+effect_plot(mods12, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
+effect_plot(mods12, flanker_c, list_sort_c) # Inhibitory Control * Working Memory
 
 
 ```
@@ -686,11 +707,27 @@ t_for_diff(mods22)
 
 ## PDM10 Effect Plots
 
-effect_plot(mods22, vocab_c, pic_seq_c)
-effect_plot(mods22, pic_seq_c, vocab_c)
-effect_plot(mods22, vocab_c, int = F)
-effect_plot(mods22, list_sort_c, flanker_c)
-effect_plot(mods22, flanker_c, list_sort_c)
+effect_plot(mods22, vocab_c, pic_seq_c) # Receptive Vocab * Picture Sequence Memory
+effect_plot(mods22, pic_seq_c, vocab_c) # Picture Sequence Memory * Receptive Vocab
+effect_plot(mods22, vocab_c, int = F) # Receptive Vocab
+effect_plot(mods22, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
+effect_plot(mods22, flanker_c, list_sort_c) # Inhibitory Control * Working Memory
+
+```
+
+
+
+```{r}
+
+# Merging Model summaries together
+change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
+
+# Combining and saving change model figures
+p12 / p22
+ggsave("Plots/Change_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
+
+# Removing unneeded items from environment
+rm(p12, p22, AM1_change_mod, PDM10_change_mod, mods12, mods22)
 
 ```
 
@@ -698,23 +735,23 @@ effect_plot(mods22, flanker_c, list_sort_c)
 
 ```{r, echo = F, warning = F, message = F}
 
-initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
+# Creating Overall Model Table
+
+initial_mods <- initial_mods %>%
+  dplyr::mutate(outcome = "Initial Intelligibility")
+
+change_mods <- change_mods %>%
+  dplyr::mutate(outcome = "Intelligbility Change")
+
+mods_table <- rbind(initial_mods, change_mods)
 
 mods_table %>%
-  gt::gt() %>%
+  gt::gt(groupname_col = "outcome") %>%
   cols_label(speaker = "Speaker",
              mods = "Model Specification",
              out_sample_r2 = "R\U00B2",
-             out_sample_rmse = "RMSE")
-
-change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
-
-change_mods %>%
-  gt::gt() %>%
-  cols_label(speaker = "Speaker",
-             mods = "Model Specification",
-             out_sample_r2 = "R\U00B2",
-             out_sample_rmse = "RMSE")
+             out_sample_rmse = "RMSE") %>%
+  gt::gtsave("Tables/mods_table.html")
 
 ```
 
