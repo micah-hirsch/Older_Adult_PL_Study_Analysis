@@ -22,7 +22,6 @@ The data preprocessing script can be found in the Manuscript Analyses subdirecto
 
 All data processing and analyses were conducted using R Version 4.3.2.
 
-
 ```{r, echo = F, warning = F, message = F}
 
 # Loading in needed packages
@@ -55,9 +54,7 @@ data <- rio::import("cleaned_data.csv")
 
 ```
 
-
 First, pretest and posttest intelligibility was calculated as a percent words correct (pwc) score for each listener. Pretest PWC and PWC change (posttest-pretest) will be our outcome variables for the analyses.
-
 
 ```{r, warning = F, message = F}
 
@@ -92,7 +89,6 @@ cor_df <- pl_int %>%
 
 ```
 
-
 ```{r, echo = F, message = F, warning = F}
 
 # removing unneeded objects from the environment
@@ -100,12 +96,11 @@ rm(age, data)
 
 ```
 
-
 # Descriptives
 
 ## Participant Demographics
 
-A total of 60 older adult listeners participated in the study. The overall demographic information for the participants are in the table below. 
+A total of 60 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
 
 ```{r}
 
@@ -135,10 +130,9 @@ rm(demo, demo_table)
 
 ```
 
-
 ## Cognition
 
-In this study, listeners were assigned to one of two speakers for perceptual training: a speaker with Ataxic dysarthria (AM1) or a speaker with Parkinson's disease (PDM10). Means and standard deviation for listener age, cognition, and word in noise hearing threshold for each condition are presented below. Wilcoxon rank sum tests were performed for each of the measures. None of the cognition or hearing measures were significantly different between the two groups of listeners. 
+In this study, listeners were assigned to one of two speakers for perceptual training: a speaker with Ataxic dysarthria (AM1) or a speaker with Parkinson's disease (PDM10). Means and standard deviation for listener age, cognition, and word in noise hearing threshold for each condition are presented below. Wilcoxon rank sum tests were performed for each of the measures. None of the cognition or hearing measures were significantly different between the two groups of listeners.
 
 ```{r, warning = F, message = F}
 
@@ -177,7 +171,7 @@ cog_table %>%
 
 ## Intelligibility
 
-Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p < .001, d = 1.01).
+Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p \< .001, d = 1.01).
 
 ```{r, warning = F, message = F}
 
@@ -336,8 +330,6 @@ cor_df %>%
 
 ```
 
-
-
 ### PDM10
 
 Like AM1, words in noise hearing threshold significantly correlated with pretest intelligibility. However, listener processing speed has a weak, but significant, correlation with intelligibility improvement. Pretest intelligibility is also has a negative correlation with intelligibility improvement, indicating that listeners in this group who had higher pretest intelligibility tend to have less intelligibility gains at posttest.
@@ -405,8 +397,7 @@ cor_df %>%
 
 ```
 
-
-```{r, eval = F, warning = F, message = F}
+```{r, echo = F, warning = F, message = F}
 
 library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
@@ -417,7 +408,6 @@ rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
 ```
 
 ## Models of Initial Intelligibility
-
 
 ```{r, warning = F, message = F}
 
@@ -472,7 +462,11 @@ training <- function(data, method, int) {
 
 ### AM1 Models
 
-```{r}
+Two elastic net models were conducted to evaluate the predictive relationship between the cognitive measures on pretest (initial) intelligibility: A model containing only the main effects of the cognitive measures (i.e. the main effects model) and another model that contains the main effects and all two-way interactions (i.e. the interaction model). The cross-validated R-squared and RMSE values are not significantly different between these two models.
+
+The relative variable importance for the models are shown in the figure below. The interaction between episodic (picture sequence) memory and words in noise hearing threshold, the main effect of words in noise threshold, the interaction between working memory and receptive vocabulary, and the interaction between working memory and processing speed were the most important variables for the AM1 initial intelligibility models.
+
+```{r, warning = F, message = F}
 
 set.seed(7036)
 
@@ -532,7 +526,7 @@ p1
 
 ```
 
-```{r}
+```{r, warning = F, message = F}
 
 in_and_out <- function(mods, speaker) {
   out_sample_r2 = map_dbl(mods, ~max(.x$results$Rsquared))
@@ -558,8 +552,7 @@ AM1_initial_mod %>%
 
 ```
 
-
-```{r}
+```{r, warning = F, message = F}
 
 t_for_diff <- function(mods){
   samps = resamples(list(
@@ -575,8 +568,9 @@ t_for_diff(mods1)
 
 ```
 
+Plotting the interaction effects for the AM1 initial intelligibility models.
 
-```{r}
+```{r, warning = F, message = F}
 
 effect_data <- function(mod){
   mod[[2]]$trainingData %>%
@@ -621,7 +615,12 @@ effect_plot(mods1, pattern_c, list_sort_c) # Processing Speed * Working Memory
 
 ### PDM10 Models
 
-```{r}
+Like for AM1, two elastic net models were used to model the predictive relationship between the listener cognitive measures and pretest intelligibility for PDM10: a main effects model and an interaction model. The difference in R-square and RMSE is not significantly different between the two models. However, the R-squared value is higher for the main effects model, indicating a better fit to the data.
+
+The important variables for the PDM10 models is shown below. The interaction between receptive vocabulary and processing speed, the main efffect of words in noise hearing threshold, the interaction between inhibitory control and words in noise hearing threshold, and the interaction between working memory and processing speed were the most important variables in the models (in that order).
+
+
+```{r, warning = F, message = F}
 
 mods2 = mod_fun("PDM10", "pretest")
 p2 = plot_fun(mods2, "b) PD")
@@ -629,8 +628,7 @@ p2
 
 ```
 
-
-```{r}
+```{r, warning = F, message = F}
 
 PDM10_initial_mod <- in_and_out(mods2, "PD")
 
@@ -644,15 +642,13 @@ PDM10_initial_mod %>%
 
 ```
 
-
-
-```{r}
+```{r, warning = F, message = F}
 t_for_diff(mods2)
 ```
 
+Plotting the interaction effects for the AM1 initial intelligibility models. 
 
-
-```{r}
+```{r, warning = F, message = F}
 
 # PDM10 Effect Plots
 
@@ -672,7 +668,7 @@ effect_plot(mods2, vocab_c, card_sort_c) # Receptive Vocab * Cognitive Flexibili
 
 ```{r, echo = F, warning = F, message = F}
 
-# Mergining initial model summaries together
+# Merging initial model summaries together
 initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
 
 # Combining initial model figures and saving
@@ -684,12 +680,15 @@ rm(p1, p2, mods1, mods2, AM1_initial_mod, PDM10_initial_mod)
 
 ```
 
-
 ## Models of Cognition and Intelligibility Change
 
 ### AM1 Models
 
-```{r}
+Two elastic net models were used to model the relationship between the listener cognitive measures and intelligibility improvement (controlling for pretest intelligibility) for AM1: the main effects only model and the model with interactions. Based on the R-squared values, the main effects model is better than the interaction model (this difference approached significance). 
+
+The relative importance of the model variables are shown in the figure below.
+
+```{r, warning = F, message = F}
 
 mod_fun2 <- function(speaker, title) {
   subsetted = cor_df %>%
@@ -714,7 +713,7 @@ p12
 
 ```
 
-```{r}
+```{r warning = F, message = F}
 
 AM1_change_mod <- in_and_out(mods12, "Ataxic")
 
@@ -727,11 +726,13 @@ AM1_change_mod %>%
 
 ```
 
-```{r}
+```{r, warning = F, message = F}
 
 t_for_diff(mods12)
 
 ```
+
+Plotting the interaction effects for intelligibility improvement models for AM1.
 
 ```{r}
 
@@ -747,10 +748,13 @@ effect_plot(mods12, flanker_c, list_sort_c) # Inhibitory Control * Working Memor
 
 ```
 
-
 ### PDM10 Models
 
-```{r}
+Two elastic net models were used to model the relationships between listener cognition measures and intelligibility improvement (controlling for pretest intelligibility) for PDM10. There is not a significant difference between the R-squared values for the two models.
+
+The relative importance of the model variables is shown in the figure below.
+
+```{r, warning = F, message = F}
 
 mods22 = mod_fun2("PDM10")
 p22 = plot_fun(mods22, "b) PD")
@@ -758,8 +762,7 @@ p22
 
 ```
 
-
-```{r}
+```{r, warning = F, message = F}
 
 PDM10_change_mod <- in_and_out(mods22, "PD")
 
@@ -772,15 +775,15 @@ PDM10_change_mod %>%
 
 ```
 
-
-```{r}
+```{r, warning = F, message = F}
 
 t_for_diff(mods22)
 
 ```
 
+Plotting the interaction effects for the intelligibility improvement models for PDM10.
 
-```{r}
+```{r, warning = F, message = F}
 
 ## PDM10 Effect Plots
 
@@ -792,25 +795,19 @@ effect_plot(mods22, flanker_c, list_sort_c) # Inhibitory Control * Working Memor
 
 ```
 
-
-
-```{r, echo = F, warning = F, message = F}
-
-# Merging Model summaries together
-change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
+```{r, eval = F, warning = F, message = F}
 
 # Combining and saving change model figures
 p12 / p22
 ggsave("Plots/Change_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
 
-# Removing unneeded items from environment
-rm(p12, p22, AM1_change_mod, PDM10_change_mod, mods12, mods22)
-
 ```
 
-
-
 ```{r, echo = F, warning = F, message = F}
+
+
+# Merging Model summaries together
+change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
 
 # Creating Overall Model Table
 
@@ -830,8 +827,7 @@ mods_table %>%
              out_sample_rmse = "RMSE") %>%
   gt::gtsave("Tables/mods_table.html")
 
+# Removing unneeded items from environment
+rm(p12, p22, AM1_change_mod, PDM10_change_mod, mods12, mods22)
+
 ```
-
-
-
-
