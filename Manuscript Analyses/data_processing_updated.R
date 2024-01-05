@@ -13,6 +13,8 @@ library(tidyverse) #install.packages("tidyverse")
 library(remotes) #install.packages("remotes")
 library(autoscore) #remotes::install_github("autoscore/autoscore")
 library(SnowballC) #install.packages("SnowballC")
+library(janitor) #install.packages("janitor")
+library(lubridate) #install.packages("lubridate")
 
 # Set Working Directory
 
@@ -32,7 +34,6 @@ for (path in file_path) {
     
     data = rio::import(file) %>%
       dplyr::rename_all(., .funs = tolower) %>%
-      dplyr::select(-date) %>%
       # Creating new variables
       dplyr::mutate(speaker = basename(path),
                     code = sub("^(.*?)_[^_]+\\.wav$", "\\1", file),
@@ -54,10 +55,51 @@ for (path in file_path) {
 }
 
 # Merging the individual dfs together
-transcriptions <- do.call(rbind, data_list)
+transcriptions <- do.call(rbind, data_list) %>%
+  dplyr::mutate(date = as.Date(date))
 
 # Removing unneeded items from the environment
 rm(data, data_list, file, file_list, file_path, path)
+
+# Participant Demographics 
+
+## Extracting date of participation from transcription df (need this to calculate age)
+date <- transcriptions %>%
+  dplyr::select(id, date) %>%
+  dplyr::distinct()
+
+## Loading and cleaning participant demo information 
+demo <- rio::import("participant_demo_raw.xlsx") %>%
+  dplyr::select(2:6) %>%
+  janitor::clean_names() %>%
+  dplyr::rename(id = participant_id,
+                dob = date_of_birth,
+                race = race_you_can_choose_multiple) %>%
+  dplyr::mutate(id = gsub("P", "", id),
+                id = trimws(id, "both"),
+                id = as.numeric(id),
+                dob = as.Date(as.character(dob), "%m/%d/%Y"),
+                ethnicity = gsub("of", "or", ethnicity),
+                gender = tolower(gender),
+                race = tolower(race),
+                ethnicity = tolower(ethnicity))
+
+demo_clean <- left_join(date, demo, by = "id")
+
+demo_clean <- demo_clean %>%
+  dplyr::mutate(age = lubridate::time_length(interval(ymd(dob), ymd(date)), "year"),
+                age = floor(age)) %>%
+  dplyr::select(!c(date, dob)) %>%
+  dplyr::relocate(age, .after = "id")
+
+## Remove unneeded objects from the environment
+
+rm(date, demo)
+
+## Remove date of participation from transcription df (we no longer need it)
+
+transcriptions <- transcriptions %>%
+  dplyr::select(-date)
 
 # Fix transcriptions for AM1
 
@@ -213,4 +255,8 @@ rm(cog, cog_subtests, cog1, corrected, uncorrected, win, words_in_noise, i, new_
 # Export 
 setwd("~/Documents/Github Repositories/Older Adult PL Study Analysis/Manuscript Analyses")
 
+## intelligibility and cog df
 rio::export(cleaned_data, "cleaned_data.csv")
+
+## participant demo df
+rio::export(demo_clean, "participant_demo.csv")

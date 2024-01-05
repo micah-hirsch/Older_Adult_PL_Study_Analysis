@@ -1,0 +1,847 @@
+---
+title: Cognitive and Auditory Predictors of Dysarthric Speech Understanding in Older
+  Adult Listeners
+author: "Lansford, Hirsch, Barrett, & Borrie"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Purpose
+
+This document contains the analysis code and output for the manuscript entitled "Cognitive and Auditory Predictors of Dysarthric Speech Understanding in Older Adult Listeners". These results will also be presented at the Biannual Motor Speech Conference held in San Diego, CA from February 21-24, 2024.
+
+The data preprocessing script can be found in the Manuscript Analyses subdirectory in this repo.
+
+All data processing and analyses were conducted using R Version 4.3.2.
+
+```{r, echo = F, warning = F, message = F}
+
+# Loading in needed packages
+library(tidyverse) #install.packages("tidyverse")
+library(rio) #install.packages("rio")
+library(gt) #install.packages("gt")
+library(gtsummary) #install.packages("gtsummary")
+library(reshape2) #install.packages("reshape2")
+library(ggcorrplot) #install.packages("ggcorrplot")
+library(patchwork) #install.packages("patchwork")
+library(janitor) #install.packages("janitor")
+library(fs) #install.packages("fs")
+library(furniture) #install.packages("furniture")
+library(caret) #install.packages("caret")
+library(effectsize) #install.packages("effectsize")
+library(parameters) #install.packages("parameters")
+library(performance) #install.packages("performance")
+library(bayestestR) #install.packages("bayestestR)
+library(rstanarm) #install.packages("rstanarm")
+library(afex) #install.packages("afex")
+library(glmnet) #install.packages("glmnet")
+
+# Load in datasets
+
+## Listener Demographic Information
+demo <- rio::import("participant_demo.csv")
+
+## Listener Intelligibility and Cognition Scores
+data <- rio::import("cleaned_data.csv")
+
+```
+
+First, pretest and posttest intelligibility was calculated as a percent words correct (pwc) score for each listener. Pretest PWC and PWC change (posttest-pretest) will be our outcome variables for the analyses.
+
+```{r, warning = F, message = F}
+
+# Calculating pretest and posttest intelligibility for the listeners
+pl_int <- data %>%
+  dplyr::group_by(id, speaker, type) %>%
+  dplyr::mutate(pwc = (sum(correct_words)/sum(target_number))*100,
+                best_win = ifelse(win_r < win_l, win_r, win_l)) %>%
+  dplyr::summarize(pwc = mean(pwc, na.rm = T),
+                   across(c(contains("_c"), contains("_u"), contains("win")),
+                          ~first(.x)
+                          )) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(type = as.factor(type),
+                type = fct_relevel(type, "pretest", "posttest"))
+
+# Subsetting age from demo df
+
+age <- demo %>%
+  select(id, age)
+
+# Merging listener age into pl_int
+
+pl_int <- dplyr::left_join(age, pl_int, by = "id") 
+
+
+cor_df <- pl_int %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = pwc) %>%
+  dplyr::mutate(improvement = posttest - pretest) %>%
+  dplyr::select(id, speaker, ends_with("_c"), best_win, pretest, posttest, improvement)
+
+```
+
+```{r, echo = F, message = F, warning = F}
+
+# removing unneeded objects from the environment
+rm(age, data)
+
+```
+
+# Descriptives
+
+## Participant Demographics
+
+A total of 60 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
+
+```{r}
+
+demo_table <- demo %>%
+  dplyr::select(-id) %>%
+  tbl_summary(type = list(age ~ "continuous",
+                          gender ~ "categorical",
+                          race ~ "categorical",
+                          ethnicity ~ "categorical"),
+              statistic = list(all_continuous() ~ "{mean} ({sd})",
+                              all_categorical() ~ "{n} ({p}%)"),
+              digits = list(everything() ~ c(2))) %>%
+  as_gt()
+
+demo_table
+
+demo_table %>%
+  gt::gtsave("Tables/demo_table.html")
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+# Removing unneeded items from the environment
+
+rm(demo, demo_table)
+
+```
+
+## Cognition
+
+In this study, listeners were assigned to one of two speakers for perceptual training: a speaker with Ataxic dysarthria (AM1) or a speaker with Parkinson's disease (PDM10). Means and standard deviation for listener age, cognition, and word in noise hearing threshold for each condition are presented below. Wilcoxon rank sum tests were performed for each of the measures. None of the cognition or hearing measures were significantly different between the two groups of listeners.
+
+```{r, warning = F, message = F}
+
+cog_table <- pl_int %>%
+  dplyr::filter(type == "pretest") %>%
+  dplyr::select(id, speaker, age, ends_with("_c"), best_win) %>%
+  dplyr::select(-fluid_cog_c) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  group_by(id, speaker) %>% 
+  summarize(across(everything(), first)) %>% 
+  ungroup() %>% 
+  select(-id) %>% 
+  tbl_summary(
+    by = "speaker",
+    statistic = list(all_continuous() ~ "{mean} ({sd})"),
+    missing = "no",
+    digits = list(everything() ~ c(2))
+  ) %>% 
+  add_p() %>%
+  as_gt() 
+
+cog_table
+
+cog_table %>%
+  gt::gtsave("Tables/means_tabel.html")
+
+```
+
+## Intelligibility
+
+Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p \< .001, d = 1.01).
+
+```{r, warning = F, message = F}
+
+# Intelligibility Descriptives Table
+
+speaker_intel <- pl_int %>%
+  dplyr::mutate(type = as.factor(type),
+                type = fct_relevel(type, "pretest", "posttest")) %>%
+  dplyr::group_by(speaker, type) %>%
+  dplyr::summarize(m_pwc = mean(pwc),
+                   sd_pwc = sd(pwc)) %>%
+  dplyr::ungroup() %>%
+  tidyr::pivot_wider(names_from = speaker,
+                     values_from = c(m_pwc:sd_pwc)) %>%
+  dplyr::relocate(sd_pwc_AM1, .after = m_pwc_AM1) %>%
+  gt::gt() %>%
+    fmt_number(columns = "m_pwc_AM1":"sd_pwc_PDM10", decimals = 2) %>%
+    tab_spanner(label = "AM1",
+                columns = c(m_pwc_AM1, sd_pwc_AM1)) %>%
+    tab_spanner(label = "PDM10",
+                columns = c(m_pwc_PDM10, sd_pwc_PDM10)) %>%
+    cols_label(type = " ",
+               m_pwc_AM1 = "Mean",
+               sd_pwc_AM1 = "SD",
+               m_pwc_PDM10 = "Mean",
+               sd_pwc_PDM10 = "SD")
+
+speaker_intel
+
+speaker_intel %>%
+  gt::gtsave("Tables/intel_des.html")
+
+```
+
+### Pretest - Posttest Plot
+
+```{r, warning = F, message = F}
+
+pl_int %>%
+  ggplot() +
+  aes(x = type,
+      y = pwc,
+      group = id) +
+  geom_line(alpha = 0.3) +
+  stat_summary(aes(group = speaker),
+               fun.y = mean, geom = "line", linewidth = 2) +
+  facet_wrap("speaker") +
+  labs(x = "Phase", y = "Intelligibility") +
+  theme_classic() +
+  theme(legend.position = "none", aspect.ratio = 1)
+
+ggsave("Plots/Pre_post.png", plot = last_plot())
+
+```
+
+```{r}
+
+cor_df %>% 
+  dplyr::select(id, speaker, pretest, posttest) %>% 
+  tidyr::pivot_longer(pretest:posttest) %>% 
+  dplyr::group_by(speaker) %>% 
+  dplyr::group_nest() %>% 
+  dplyr::mutate(
+    mod = map(data, ~afex::aov_4(value ~ 1 + (name|id), data = .x))
+  ) %>% 
+  pull(mod)
+
+cor_df %>% 
+  dplyr::select(id, speaker, pretest, posttest) %>% 
+  tidyr::pivot_longer(pretest:posttest) %>% 
+  dplyr::group_by(speaker) %>% 
+  dplyr::group_nest() %>% 
+  dplyr::mutate(
+    mod = map(data, ~effectsize::cohens_d(value ~ name, data = .x))
+  ) %>% 
+  pull(mod)
+
+```
+
+# Results
+
+## Correlations
+
+The correlation matricies between all the cognitive measures, hearing threshold, initial intelligibility, and intelligibility improvement were conducted for each speaker condition.
+
+### AM1
+
+Words in noise significantly correlated with pretest intelligibility for AM1 at the alpha = 0.05 level. Listeners with higher (i.e. worse) words in noise hearing thresholds tend to have lower pretest intelligibility (i.e. lower initial intelligibility) for AM1.
+
+```{r, warning = F, message = F}
+
+# Customize plot colors
+
+library(LaCroixColoR) #remotes::install_github("johannesbjork/LaCroixColoR")
+my_pal <- lacroix_palette("PeachPear", n = 15, type = "continuous")
+my_pal <- rev(my_pal)
+
+# AM1 Cor Plot
+AM1_cor <- cor_df %>%
+  dplyr::filter(speaker == "AM1") %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  dplyr::rename_all(snakecase::to_title_case) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(
+    type = "lower",
+    outline.col = "white",
+    colors = c(my_pal[1], "white", my_pal[15]),
+    lab = TRUE,
+    insig = "blank",
+    title = "Ataxic", 
+    legend.title = "Correlation"
+  )
+  
+AM1_cor
+
+```
+
+The plot below shows only the significant correlations in the matrix above for AM1.
+
+```{r, warning = F, message = F}
+
+cor_df %>%
+  dplyr::filter(speaker == "AM1") %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  dplyr::rename_all(snakecase::to_title_case) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(
+    type = "lower",
+    outline.col = "white",
+    colors = c(my_pal[1], "white", my_pal[15]),
+    lab = TRUE,
+    p.mat = cor_pmat(.),
+    sig.level = 0.05,
+    insig = "blank",
+    title = "Ataxic", 
+    legend.title = "Correlation"
+  )
+
+```
+
+### PDM10
+
+Like AM1, words in noise hearing threshold significantly correlated with pretest intelligibility. However, listener processing speed has a weak, but significant, correlation with intelligibility improvement. Pretest intelligibility is also has a negative correlation with intelligibility improvement, indicating that listeners in this group who had higher pretest intelligibility tend to have less intelligibility gains at posttest.
+
+```{r, warning = F, message = F}
+
+# PDM10 Cor Plot
+PDM10_cor <- cor_df %>%
+  dplyr::filter(speaker == "PDM10") %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  dplyr::rename_all(snakecase::to_title_case) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(
+    type = "lower",
+    outline.col = "white",
+    colors = c(my_pal[1], "white", my_pal[15]),
+    lab = TRUE,
+    insig = "blank",
+    title = "Parkinson's Disease", 
+    legend.title = "Correlation"
+  )
+
+PDM10_cor
+
+```
+
+The plot below only shows the significant correlations for PDM10.
+
+```{r}
+
+cor_df %>%
+  dplyr::filter(speaker == "PDM10") %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Picture Sequence Memory` = pic_seq_c,
+    `Words in Noise Threshold` = best_win
+  ) %>%
+  dplyr::rename_all(snakecase::to_title_case) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  ggcorrplot(
+    type = "lower",
+    outline.col = "white",
+    colors = c(my_pal[1], "white", my_pal[15]),
+    lab = TRUE,
+    p.mat = cor_pmat(.),
+    insig = "blank",
+    sig.level = 0.05,
+    title = "Parkinson's Disease", 
+    legend.title = "Correlation"
+  )
+
+```
+
+```{r, eval = F, warning = F, message = F}
+
+library(patchwork)
+AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
+
+rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
+
+```
+
+
+## Models of Initial Intelligibility
+
+```{r, warning = F, message = F}
+
+# Functions used in this code
+
+## Plot importance function
+plot_importance = function(mods, labels){
+  map2(mods, labels, ~var_imp(.x, .y)) %>% 
+    reduce(full_join, by = "var") %>% 
+    ungroup() %>% 
+    pivot_longer(-var) %>% 
+    group_by(var) %>% 
+    mutate(avg_imp = mean(value, na.rm=TRUE)) %>% 
+    ungroup() %>% 
+    arrange(avg_imp) %>% 
+    mutate(var = fct_inorder(var))
+}
+
+## Function for determining variable importance
+var_imp <- function(mod, label) {
+  varImp(mod)$importance %>%
+    rownames_to_column(var = "Variable") %>%
+    mutate(Overall = Overall/max(Overall)) %>%
+    rename(!!label := Overall, 
+          var = Variable)
+}
+
+## Function for model training
+training <- function(data, method, int) {
+  form = if (isTRUE(int)) {
+    d2 = model.matrix(pwc ~ . * ., data = data)[, -1] %>%
+      as_tibble() %>%
+      janitor::clean_names()
+    d2$pwc = data$pwc
+  } else {
+    d2 = data
+  }
+    train(
+      pwc ~ ., 
+      data = d2, 
+      preProcess = c("center", "scale"),
+      method = method, 
+      trControl = caret::trainControl(
+        method = "repeatedcv",
+        number = 5,
+        repeats = 10
+    )
+  )
+}
+
+```
+
+### AM1 Models
+
+Two elastic net models were conducted to evaluate the predictive relationship between the cognitive measures on pretest (initial) intelligibility: A model containing only the main effects of the cognitive measures (i.e. the main effects model) and another model that contains the main effects and all two-way interactions (i.e. the interaction model). The cross-validated R-squared and RMSE values are not significantly different between these two models.
+
+The relative variable importance for the models are shown in the figure below. The interaction between episodic (picture sequence) memory and words in noise hearing threshold, the main effect of words in noise threshold, the interaction between working memory and receptive vocabulary, and the interaction between working memory and processing speed were the most important variables for the AM1 initial intelligibility models.
+
+```{r, warning = F, message = F}
+
+set.seed(7036)
+
+mod_fun = function(speaker, type){
+  subsetted = pl_int %>% 
+    filter(type == {{type}}) %>% 
+    filter(speaker == {{speaker}}) %>% 
+    select(pwc, ends_with("_c"), best_win) %>% 
+    drop_na(pwc, ends_with("_c"), best_win) %>% 
+    select(-contains("fluid"))
+  
+  mod.1 = training(subsetted, "glmnet", int = FALSE)
+  mod.2 = training(subsetted, "glmnet", int = TRUE)
+  
+  return(list(mod.1, mod.2))
+}
+
+plot_fun = function(mods, title){
+  plot_importance(
+    mods = mods,
+    labels = c("main", "int")
+  ) %>% 
+    drop_na(value) %>% 
+    mutate(name = factor(
+      name, 
+      levels = c("main", "int"),
+      labels = c(
+        paste0("Main Effects"),
+        paste0("Interactions")
+    ))) %>% 
+    filter(name == "Interactions") %>% 
+    mutate(var = str_replace(var, "flanker_c", "Inhibitory Control of Attention"),
+           var = str_replace(var, "card_sort_c", "Cognitive Flexibility"),
+           var = str_replace(var, "vocab_c", "Vocabulary Knowledge"),
+           var = str_replace(var, "pattern_c", "Processing Speed"),
+           var = str_replace(var, "list_sort_c", "Working Memory"),
+           var = str_replace(var, "pic_seq_c", "Picture Sequence Memory"),
+           var = str_replace(var, "best_win", "Words in Noise Threshold"),
+           var = str_replace(var, "_", " x ")) %>% 
+    arrange(value) %>% 
+    mutate(var = fct_inorder(var)) %>% 
+    ggplot(aes(x = value, y = var, color = value)) +
+    geom_segment(aes(xend = 0, yend = var)) +
+    geom_point(size = 2) +
+    facet_wrap(~name, scales = "free") +
+    labs(x = "Relative Importance",
+         y = "",
+         title = {{title}}) +
+    scale_color_gradientn(colors = my_pal) +
+    theme_bw() +
+    theme(plot.title.position = "plot")
+}
+
+mods1 = mod_fun("AM1", "pretest")
+p1 = plot_fun(mods1, "a) Ataxic")
+p1
+
+```
+
+```{r, warning = F, message = F}
+
+in_and_out <- function(mods, speaker) {
+  out_sample_r2 = map_dbl(mods, ~max(.x$results$Rsquared))
+  out_sample_rmse = map_dbl(mods, ~min(.x$results$RMSE)) 
+  tibble(
+    speaker = speaker,
+    mods = c("Main Effects", "Interactions"),
+    out_sample_r2,
+    out_sample_rmse
+  )
+}
+
+AM1_initial_mod <- in_and_out(mods1, "Ataxic")
+
+AM1_initial_mod %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+
+
+```
+
+```{r, warning = F, message = F}
+
+t_for_diff <- function(mods){
+  samps = resamples(list(
+    main = mods[[1]],
+    int = mods[[2]]
+  ))
+  summary(samps)
+  diff(samps) %>%
+    summary()
+}
+
+t_for_diff(mods1)
+
+```
+
+Plotting the interaction effects for the AM1 initial intelligibility models.
+
+```{r, warning = F, message = F}
+
+effect_data <- function(mod){
+  mod[[2]]$trainingData %>%
+    mutate(preds = predict(mod[[2]]))
+}
+
+effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
+  dat = effect_data(mod)
+  
+  if (isFALSE(int)){
+    dat %>%
+      ggplot() +
+      aes(x={{var}}, 
+          y = .outcome) +
+      geom_point() +
+      geom_smooth(method = "lm")
+  } else {
+    dat %>%
+      ggplot() +
+      aes(x = {{var}},
+          y= .outcome,
+          group = cut_interval({{var2}}, num),
+          color = cut_interval({{var2}}, num)) +
+      geom_point() +
+      geom_smooth(method = "lm") +
+      theme(legend.position = "bottom")
+  }
+}
+
+# AM1 Effect Plots
+
+effect_plot(mods1, pic_seq_c, best_win) # Picture Sequence Memory * Words in Noise
+effect_plot(mods1, best_win, pic_seq_c) # Words in Noise * Picture Sequence Memory
+effect_plot(mods1, best_win, int = F) # Words in Noise
+effect_plot(mods1, list_sort_c, vocab_c) # Working Memory * Receptive Vocab
+effect_plot(mods1, vocab_c, list_sort_c) # Receptive Vocab * Working Memory
+effect_plot(mods1, list_sort_c, pattern_c) # Working Memory * Processing Speed
+effect_plot(mods1, pattern_c, list_sort_c) # Processing Speed * Working Memory
+
+
+```
+
+### PDM10 Models
+
+Like for AM1, two elastic net models were used to model the predictive relationship between the listener cognitive measures and pretest intelligibility for PDM10: a main effects model and an interaction model. The difference in R-square and RMSE is not significantly different between the two models. However, the R-squared value is higher for the main effects model, indicating a better fit to the data.
+
+The important variables for the PDM10 models is shown below. The interaction between receptive vocabulary and processing speed, the main efffect of words in noise hearing threshold, the interaction between inhibitory control and words in noise hearing threshold, and the interaction between working memory and processing speed were the most important variables in the models (in that order).
+
+
+```{r, warning = F, message = F}
+
+mods2 = mod_fun("PDM10", "pretest")
+p2 = plot_fun(mods2, "b) PD")
+p2
+
+```
+
+```{r, warning = F, message = F}
+
+PDM10_initial_mod <- in_and_out(mods2, "PD")
+
+PDM10_initial_mod %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+
+```
+
+```{r, warning = F, message = F}
+t_for_diff(mods2)
+```
+
+Plotting the interaction effects for the AM1 initial intelligibility models. 
+
+```{r, warning = F, message = F}
+
+# PDM10 Effect Plots
+
+effect_plot(mods2, vocab_c, pattern_c) # Receptive Vocab * Processing Speed
+effect_plot(mods2, pattern_c, vocab_c) # Processing Speed * Receptive Vocab
+effect_plot(mods2, best_win, int = F) # Words in Noise
+effect_plot(mods2, flanker_c, best_win) # Inhibitory Control * Words in Noise
+effect_plot(mods2, best_win, flanker_c) # Words in Noise * Inhibitory Control
+effect_plot(mods2, list_sort_c, pattern_c) # Working Memory * Processing Speed
+effect_plot(mods2, pattern_c, list_sort_c) # Processing Speech * Working Memory
+effect_plot(mods2, vocab_c, pic_seq_c) # Receptive Vocab * Picture Sequence Memory
+effect_plot(mods2, pic_seq_c, vocab_c) # Picture Sequence Memory * Receptive Vocab
+effect_plot(mods2, card_sort_c, vocab_c) # Cognitive Flexibility * Receptive Vocab
+effect_plot(mods2, vocab_c, card_sort_c) # Receptive Vocab * Cognitive Flexibility
+
+```
+
+```{r, eval = F, warning = F, message = F}
+
+
+# Combining initial model figures and saving
+p1 / p2
+ggsave("Plots/Initial_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
+
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+# Merging initial model summaries together
+initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
+
+# Removing unneeded items from Environment
+rm(p1, p2, mods1, mods2, AM1_initial_mod, PDM10_initial_mod)
+
+```
+
+
+## Models of Cognition and Intelligibility Change
+
+### AM1 Models
+
+Two elastic net models were used to model the relationship between the listener cognitive measures and intelligibility improvement (controlling for pretest intelligibility) for AM1: the main effects only model and the model with interactions. Based on the R-squared values, the main effects model is better than the interaction model (this difference approached significance). 
+
+The relative importance of the model variables are shown in the figure below.
+
+```{r, warning = F, message = F}
+
+mod_fun2 <- function(speaker, title) {
+  subsetted = cor_df %>%
+    dplyr::select(-c(fluid_cog_c, improvement)) %>%
+    dplyr::mutate(pwc_diff = resid(lm(posttest ~ pretest))) %>%
+    dplyr::select(pwc_diff, ends_with("_c"), speaker) %>%
+    tidyr::drop_na(pwc_diff, ends_with("_c"), speaker) %>%
+    dplyr::filter(speaker == {{speaker}}) %>%
+    dplyr::select(-speaker) %>%
+    rename(pwc = pwc_diff)
+  
+  mod.1 = training(subsetted, "glmnet", int = F)
+  mod.2 = training(subsetted, "glmnet", int = T)
+  
+  return(list(mod.1, mod.2))
+  
+}
+
+mods12 = mod_fun2("AM1")
+p12 = plot_fun(mods12, "a) Ataxic")
+p12
+
+```
+
+```{r warning = F, message = F}
+
+AM1_change_mod <- in_and_out(mods12, "Ataxic")
+
+AM1_change_mod %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+```
+
+```{r, warning = F, message = F}
+
+t_for_diff(mods12)
+
+```
+
+Plotting the interaction effects for intelligibility improvement models for AM1.
+
+```{r}
+
+## AM1 Effect Plots
+
+effect_plot(mods12, list_sort_c, vocab_c) # Working Memory * Receptive Vocab
+effect_plot(mods12, vocab_c, list_sort_c) # Receptive Vocab * Working Memory
+effect_plot(mods12, list_sort_c, int = F) # Working Memory
+effect_plot(mods12, pattern_c, int = F) # Processing Speed
+effect_plot(mods12, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
+effect_plot(mods12, flanker_c, list_sort_c) # Inhibitory Control * Working Memory
+
+
+```
+
+### PDM10 Models
+
+Two elastic net models were used to model the relationships between listener cognition measures and intelligibility improvement (controlling for pretest intelligibility) for PDM10. There is not a significant difference between the R-squared values for the two models.
+
+The relative importance of the model variables is shown in the figure below.
+
+```{r, warning = F, message = F}
+
+mods22 = mod_fun2("PDM10")
+p22 = plot_fun(mods22, "b) PD")
+p22
+
+```
+
+```{r, warning = F, message = F}
+
+PDM10_change_mod <- in_and_out(mods22, "PD")
+
+PDM10_change_mod %>%
+  gt::gt() %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE")
+
+```
+
+```{r, warning = F, message = F}
+
+t_for_diff(mods22)
+
+```
+
+Plotting the interaction effects for the intelligibility improvement models for PDM10.
+
+```{r, warning = F, message = F}
+
+## PDM10 Effect Plots
+
+effect_plot(mods22, vocab_c, pic_seq_c) # Receptive Vocab * Picture Sequence Memory
+effect_plot(mods22, pic_seq_c, vocab_c) # Picture Sequence Memory * Receptive Vocab
+effect_plot(mods22, vocab_c, int = F) # Receptive Vocab
+effect_plot(mods22, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
+effect_plot(mods22, flanker_c, list_sort_c) # Inhibitory Control * Working Memory
+
+```
+
+```{r, eval = F, warning = F, message = F}
+
+# Combining and saving change model figures
+p12 / p22
+ggsave("Plots/Change_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+
+# Merging Model summaries together
+change_mods <- rbind(AM1_change_mod, PDM10_change_mod)
+
+# Creating Overall Model Table
+
+initial_mods <- initial_mods %>%
+  dplyr::mutate(outcome = "Initial Intelligibility")
+
+change_mods <- change_mods %>%
+  dplyr::mutate(outcome = "Intelligbility Change")
+
+mods_table <- rbind(initial_mods, change_mods)
+
+mods_table %>%
+  gt::gt(groupname_col = "outcome") %>%
+  cols_label(speaker = "Speaker",
+             mods = "Model Specification",
+             out_sample_r2 = "R\U00B2",
+             out_sample_rmse = "RMSE") %>%
+  gt::gtsave("Tables/mods_table.html")
+
+# Removing unneeded items from environment
+rm(p12, p22, AM1_change_mod, PDM10_change_mod, mods12, mods22)
+
+```
