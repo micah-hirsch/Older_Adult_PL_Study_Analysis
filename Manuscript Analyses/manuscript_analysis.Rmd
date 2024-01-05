@@ -575,6 +575,13 @@ PDM10_initial_mod %>%
 ```
 
 
+
+```{r}
+t_for_diff(mods2)
+```
+
+
+
 ```{r}
 
 # PDM10 Effect Plots
