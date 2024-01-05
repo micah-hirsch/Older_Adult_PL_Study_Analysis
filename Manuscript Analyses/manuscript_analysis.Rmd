@@ -397,7 +397,7 @@ cor_df %>%
 
 ```
 
-```{r, echo = F, warning = F, message = F}
+```{r, eval = F, warning = F, message = F}
 
 library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
@@ -406,6 +406,13 @@ ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
 rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
 
 ```
+
+```{r, echo = F, warning = F, message = F}
+
+rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
+
+```
+
 
 ## Models of Initial Intelligibility
 
@@ -666,19 +673,26 @@ effect_plot(mods2, vocab_c, card_sort_c) # Receptive Vocab * Cognitive Flexibili
 
 ```
 
-```{r, echo = F, warning = F, message = F}
+```{r, eval = F, warning = F, message = F}
 
-# Merging initial model summaries together
-initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
 
 # Combining initial model figures and saving
 p1 / p2
 ggsave("Plots/Initial_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
 
+
+```
+
+```{r, echo = F, warning = F, message = F}
+
+# Merging initial model summaries together
+initial_mods <- rbind(AM1_initial_mod, PDM10_initial_mod)
+
 # Removing unneeded items from Environment
 rm(p1, p2, mods1, mods2, AM1_initial_mod, PDM10_initial_mod)
 
 ```
+
 
 ## Models of Cognition and Intelligibility Change
 
