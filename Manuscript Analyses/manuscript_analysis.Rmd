@@ -139,14 +139,13 @@ In this study, listeners were assigned to one of two speakers for perceptual tra
 cog_table <- pl_int %>%
   dplyr::filter(type == "pretest") %>%
   dplyr::select(id, speaker, age, ends_with("_c"), best_win) %>%
-  dplyr::select(-fluid_cog_c) %>%
+  dplyr::select(-c(fluid_cog_c, pic_seq_c)) %>%
   dplyr::rename(
     `Working Memory` = list_sort_c,
     `Inhibitory Control` = flanker_c,
     `Cognitive Flexibility` = card_sort_c,
     `Receptive Vocabulary` = vocab_c,
     `Processing Speed` = pattern_c,
-    `Picture Sequence Memory` = pic_seq_c,
     `Words in Noise Threshold` = best_win
   ) %>%
   group_by(id, speaker) %>% 
@@ -171,7 +170,7 @@ cog_table %>%
 
 ## Intelligibility
 
-Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p \< .001, d = 1.01).
+Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p < .001, d = 1.01).
 
 ```{r, warning = F, message = F}
 
@@ -272,14 +271,13 @@ my_pal <- rev(my_pal)
 # AM1 Cor Plot
 AM1_cor <- cor_df %>%
   dplyr::filter(speaker == "AM1") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
   dplyr::rename(
     `Working Memory` = list_sort_c,
     `Inhibitory Control` = flanker_c,
     `Cognitive Flexibility` = card_sort_c,
     `Receptive Vocabulary` = vocab_c,
     `Processing Speed` = pattern_c,
-    `Picture Sequence Memory` = pic_seq_c,
     `Words in Noise Threshold` = best_win
   ) %>%
   dplyr::rename_all(snakecase::to_title_case) %>%
@@ -304,14 +302,13 @@ The plot below shows only the significant correlations in the matrix above for A
 
 cor_df %>%
   dplyr::filter(speaker == "AM1") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
   dplyr::rename(
     `Working Memory` = list_sort_c,
     `Inhibitory Control` = flanker_c,
     `Cognitive Flexibility` = card_sort_c,
     `Receptive Vocabulary` = vocab_c,
     `Processing Speed` = pattern_c,
-    `Picture Sequence Memory` = pic_seq_c,
     `Words in Noise Threshold` = best_win
   ) %>%
   dplyr::rename_all(snakecase::to_title_case) %>%
@@ -332,21 +329,20 @@ cor_df %>%
 
 ### PDM10
 
-Like AM1, words in noise hearing threshold significantly correlated with pretest intelligibility. However, listener processing speed has a weak, but significant, correlation with intelligibility improvement. Pretest intelligibility is also has a negative correlation with intelligibility improvement, indicating that listeners in this group who had higher pretest intelligibility tend to have less intelligibility gains at posttest.
+Like AM1, words in noise hearing threshold significantly correlated with pretest intelligibility. However, pretest intelligibility is also has a negative correlation with intelligibility improvement, indicating that listeners in this group who had higher pretest intelligibility tend to have less intelligibility gains at posttest.
 
 ```{r, warning = F, message = F}
 
 # PDM10 Cor Plot
 PDM10_cor <- cor_df %>%
   dplyr::filter(speaker == "PDM10") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
   dplyr::rename(
     `Working Memory` = list_sort_c,
     `Inhibitory Control` = flanker_c,
     `Cognitive Flexibility` = card_sort_c,
     `Receptive Vocabulary` = vocab_c,
     `Processing Speed` = pattern_c,
-    `Picture Sequence Memory` = pic_seq_c,
     `Words in Noise Threshold` = best_win
   ) %>%
   dplyr::rename_all(snakecase::to_title_case) %>%
@@ -371,14 +367,13 @@ The plot below only shows the significant correlations for PDM10.
 
 cor_df %>%
   dplyr::filter(speaker == "PDM10") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, posttest)) %>%
+  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
   dplyr::rename(
     `Working Memory` = list_sort_c,
     `Inhibitory Control` = flanker_c,
     `Cognitive Flexibility` = card_sort_c,
     `Receptive Vocabulary` = vocab_c,
     `Processing Speed` = pattern_c,
-    `Picture Sequence Memory` = pic_seq_c,
     `Words in Noise Threshold` = best_win
   ) %>%
   dplyr::rename_all(snakecase::to_title_case) %>%
@@ -402,8 +397,6 @@ cor_df %>%
 library(patchwork)
 AM1_cor + PDM10_cor + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ggsave("Plots/cor_fig.png", width = 20, height = 6, dpi = 300, units = "in")
-
-rm(AM1_cor, PDM10_cor, cog_table, speaker_intel)
 
 ```
 
@@ -469,9 +462,9 @@ training <- function(data, method, int) {
 
 ### AM1 Models
 
-Two elastic net models were conducted to evaluate the predictive relationship between the cognitive measures on pretest (initial) intelligibility: A model containing only the main effects of the cognitive measures (i.e. the main effects model) and another model that contains the main effects and all two-way interactions (i.e. the interaction model). The cross-validated R-squared and RMSE values are not significantly different between these two models.
+Two elastic net models were conducted to evaluate the predictive relationship between the cognitive measures on pretest (initial) intelligibility: A model containing only the main effects of the cognitive measures (i.e. the main effects model) and another model that contains the main effects and all two-way interactions (i.e. the interaction model). The cross-validated R-squared and RMSE values are not significantly different between these two models. However, the r-squared value for the main effects model is higher.
 
-The relative variable importance for the models are shown in the figure below. The interaction between episodic (picture sequence) memory and words in noise hearing threshold, the main effect of words in noise threshold, the interaction between working memory and receptive vocabulary, and the interaction between working memory and processing speed were the most important variables for the AM1 initial intelligibility models.
+The relative variable importance for the models are shown in the figure below. The most important predictor for the AM1 initial intelligibility model was words-in-noise hearing threshold, followed by working memory, the interaction between working memory and inhibitory control, and the interaction between working memory and receptive vocabulary.
 
 ```{r, warning = F, message = F}
 
@@ -483,7 +476,7 @@ mod_fun = function(speaker, type){
     filter(speaker == {{speaker}}) %>% 
     select(pwc, ends_with("_c"), best_win) %>% 
     drop_na(pwc, ends_with("_c"), best_win) %>% 
-    select(-contains("fluid"))
+    select(-c(fluid_cog_c, pic_seq_c))
   
   mod.1 = training(subsetted, "glmnet", int = FALSE)
   mod.2 = training(subsetted, "glmnet", int = TRUE)
@@ -507,10 +500,9 @@ plot_fun = function(mods, title){
     filter(name == "Interactions") %>% 
     mutate(var = str_replace(var, "flanker_c", "Inhibitory Control of Attention"),
            var = str_replace(var, "card_sort_c", "Cognitive Flexibility"),
-           var = str_replace(var, "vocab_c", "Vocabulary Knowledge"),
+           var = str_replace(var, "vocab_c", "Receptive Vocabulary"),
            var = str_replace(var, "pattern_c", "Processing Speed"),
            var = str_replace(var, "list_sort_c", "Working Memory"),
-           var = str_replace(var, "pic_seq_c", "Picture Sequence Memory"),
            var = str_replace(var, "best_win", "Words in Noise Threshold"),
            var = str_replace(var, "_", " x ")) %>% 
     arrange(value) %>% 
@@ -609,22 +601,21 @@ effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
 
 # AM1 Effect Plots
 
-effect_plot(mods1, pic_seq_c, best_win) # Picture Sequence Memory * Words in Noise
-effect_plot(mods1, best_win, pic_seq_c) # Words in Noise * Picture Sequence Memory
 effect_plot(mods1, best_win, int = F) # Words in Noise
+effect_plot(mods1, list_sort_c, int = F) # Working Memory
+effect_plot(mods1, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
+effect_plot(mods1, flanker_c, list_sort_c) # Inhibitory Control * Working Memory
 effect_plot(mods1, list_sort_c, vocab_c) # Working Memory * Receptive Vocab
 effect_plot(mods1, vocab_c, list_sort_c) # Receptive Vocab * Working Memory
-effect_plot(mods1, list_sort_c, pattern_c) # Working Memory * Processing Speed
-effect_plot(mods1, pattern_c, list_sort_c) # Processing Speed * Working Memory
 
 
 ```
 
 ### PDM10 Models
 
-Like for AM1, two elastic net models were used to model the predictive relationship between the listener cognitive measures and pretest intelligibility for PDM10: a main effects model and an interaction model. The difference in R-square and RMSE is not significantly different between the two models. However, the R-squared value is higher for the main effects model, indicating a better fit to the data.
+Like for AM1, two elastic net models were used to model the predictive relationship between the listener cognitive measures and pretest intelligibility for PDM10: a main effects model and an interaction model. The difference in R-square and RMSE is not significantly different between the two models. However, the R-squared value is higher for the interaction model, indicating a better fit to the data.
 
-The important variables for the PDM10 models is shown below. The interaction between receptive vocabulary and processing speed, the main efffect of words in noise hearing threshold, the interaction between inhibitory control and words in noise hearing threshold, and the interaction between working memory and processing speed were the most important variables in the models (in that order).
+The important variables for the PDM10 models is shown below. The interaction between working memory and words in noise hearing threshold is the most important predictor, followed by the main effect of words in noise hearing threshold, the interaction between working memory and receptive vocabulary, the interaction between cognitive flexibility and processing speed, the interaction between inhibiotry control and words in noise hearing threshold, the interaction between receptive vocabulary and processing speed, and the interaction between working memory and cognitive flexibility.
 
 
 ```{r, warning = F, message = F}
@@ -659,17 +650,17 @@ Plotting the interaction effects for the AM1 initial intelligibility models.
 
 # PDM10 Effect Plots
 
-effect_plot(mods2, vocab_c, pattern_c) # Receptive Vocab * Processing Speed
-effect_plot(mods2, pattern_c, vocab_c) # Processing Speed * Receptive Vocab
-effect_plot(mods2, best_win, int = F) # Words in Noise
-effect_plot(mods2, flanker_c, best_win) # Inhibitory Control * Words in Noise
-effect_plot(mods2, best_win, flanker_c) # Words in Noise * Inhibitory Control
-effect_plot(mods2, list_sort_c, pattern_c) # Working Memory * Processing Speed
-effect_plot(mods2, pattern_c, list_sort_c) # Processing Speech * Working Memory
-effect_plot(mods2, vocab_c, pic_seq_c) # Receptive Vocab * Picture Sequence Memory
-effect_plot(mods2, pic_seq_c, vocab_c) # Picture Sequence Memory * Receptive Vocab
-effect_plot(mods2, card_sort_c, vocab_c) # Cognitive Flexibility * Receptive Vocab
-effect_plot(mods2, vocab_c, card_sort_c) # Receptive Vocab * Cognitive Flexibility
+effect_plot(mods2, list_sort_c, best_win) # Working Memory * Words in Noise Threshold
+effect_plot(mods2, best_win, list_sort_c) # Words in Noise Threshold * Working Memory
+effect_plot(mods2, best_win, int = F) # Words in Noise Threshold
+effect_plot(mods2, list_sort_c, vocab_c) # Working Memory * Receptive Vocabulary
+effect_plot(mods2, card_sort_c, pattern_c) # Cognitive Flexibility * Processing Speed
+effect_plot(mods2, pattern_c, card_sort_c) # Processing Speed * Cognitive Flexibility
+effect_plot(mods2, flanker_c, best_win) # Inhibitory Control * Words in Noise Threshold
+effect_plot(mods2, vocab_c, pattern_c) # Receptive Vocabulary * Processing Speed
+effect_plot(mods2, pattern_c, vocab_c) # Processing Speed * Receptive Vocabulary
+effect_plot(mods2, list_sort_c, card_sort_c) # Working Memory * Cognitive Flexibility
+effect_plot(mods2, card_sort_c, list_sort_c) # Cognitive Flexibility * Working Memory
 
 ```
 
@@ -698,7 +689,7 @@ rm(p1, p2, mods1, mods2, AM1_initial_mod, PDM10_initial_mod)
 
 ### AM1 Models
 
-Two elastic net models were used to model the relationship between the listener cognitive measures and intelligibility improvement (controlling for pretest intelligibility) for AM1: the main effects only model and the model with interactions. Based on the R-squared values, the main effects model is better than the interaction model (this difference approached significance). 
+Two elastic net models were used to model the relationship between the listener cognitive measures and intelligibility improvement (controlling for pretest intelligibility) for AM1: the main effects only model and the model with interactions. 
 
 The relative importance of the model variables are shown in the figure below.
 
@@ -706,7 +697,7 @@ The relative importance of the model variables are shown in the figure below.
 
 mod_fun2 <- function(speaker, title) {
   subsetted = cor_df %>%
-    dplyr::select(-c(fluid_cog_c, improvement)) %>%
+    dplyr::select(-c(fluid_cog_c, pic_seq_c, improvement)) %>%
     dplyr::mutate(pwc_diff = resid(lm(posttest ~ pretest))) %>%
     dplyr::select(pwc_diff, ends_with("_c"), speaker) %>%
     tidyr::drop_na(pwc_diff, ends_with("_c"), speaker) %>%
@@ -748,12 +739,12 @@ t_for_diff(mods12)
 
 Plotting the interaction effects for intelligibility improvement models for AM1.
 
-```{r}
+```{r, warning = F, message = F}
 
 ## AM1 Effect Plots
 
-effect_plot(mods12, list_sort_c, vocab_c) # Working Memory * Receptive Vocab
-effect_plot(mods12, vocab_c, list_sort_c) # Receptive Vocab * Working Memory
+effect_plot(mods12, list_sort_c, vocab_c) # Working Memory * Receptive Vocabulary
+effect_plot(mods12, vocab_c, list_sort_c) # Receptive Vocabulary * Working Memory
 effect_plot(mods12, list_sort_c, int = F) # Working Memory
 effect_plot(mods12, pattern_c, int = F) # Processing Speed
 effect_plot(mods12, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
@@ -801,11 +792,10 @@ Plotting the interaction effects for the intelligibility improvement models for 
 
 ## PDM10 Effect Plots
 
-effect_plot(mods22, vocab_c, pic_seq_c) # Receptive Vocab * Picture Sequence Memory
-effect_plot(mods22, pic_seq_c, vocab_c) # Picture Sequence Memory * Receptive Vocab
-effect_plot(mods22, vocab_c, int = F) # Receptive Vocab
-effect_plot(mods22, list_sort_c, flanker_c) # Working Memory * Inhibitory Control
-effect_plot(mods22, flanker_c, list_sort_c) # Inhibitory Control * Working Memory
+effect_plot(mods22, vocab_c, int = F) # Receptive Vocab 
+effect_plot(mods22, flanker_c, int = F) # Inhibitory Control
+effect_plot(mods22, card_sort_c, vocab_c) # Cognitive Flexibility * Receptive Vocab
+
 
 ```
 
@@ -839,6 +829,7 @@ mods_table %>%
              mods = "Model Specification",
              out_sample_r2 = "R\U00B2",
              out_sample_rmse = "RMSE") %>%
+  fmt_number(decimals = 2) %>%
   gt::gtsave("Tables/mods_table.html")
 
 # Removing unneeded items from environment
