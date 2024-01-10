@@ -599,8 +599,8 @@ effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
       ggplot() +
       aes(x = {{var}},
           y= .outcome,
-          group = cut_interval({{var2}}, num),
-          color = cut_interval({{var2}}, num)) +
+          group = cut_number({{var2}}, num),
+          color = cut_number({{var2}}, num)) +
       geom_point() +
       geom_smooth(method = "lm") +
       theme(legend.position = "bottom")
@@ -659,9 +659,10 @@ Plotting the interaction effects for the PDM10 initial intelligibility models.
 # PDM10 Effect Plots
 
 effect_plot(mods2, list_sort_c, best_win) # Working Memory * Words in Noise Threshold
-effect_plot(mods2, best_win, list_sort_c) # Words in Noise Threshold * Working Memory
+#effect_plot(mods2, best_win, list_sort_c) # Words in Noise Threshold * Working Memory
 effect_plot(mods2, best_win, int = F) # Words in Noise Threshold
 effect_plot(mods2, list_sort_c, vocab_c) # Working Memory * Receptive Vocabulary
+effect_plot(mods2, vocab_c, list_sort_c)
 effect_plot(mods2, card_sort_c, pattern_c) # Cognitive Flexibility * Processing Speed
 effect_plot(mods2, pattern_c, card_sort_c) # Processing Speed * Cognitive Flexibility
 effect_plot(mods2, flanker_c, best_win) # Inhibitory Control * Words in Noise Threshold
@@ -799,7 +800,7 @@ Plotting the interaction effects for the intelligibility improvement models for 
 
 ## PDM10 Effect Plots
 
-effect_plot(mods22, card_sort_c, vocab_c) # Cognitive Flexibility * Receptive Vocabulary
+# effect_plot(mods22, card_sort_c, vocab_c) # Cognitive Flexibility * Receptive Vocabulary
 effect_plot(mods22, vocab_c, card_sort_c) # Receptive Vocabulary * Cognitive Flexibility
 effect_plot(mods22, flanker_c, pattern_c) # Inhibitory Control * Processing Speed
 effect_plot(mods22, pattern_c, flanker_c) # Processing Speed * Inhibitory Control
