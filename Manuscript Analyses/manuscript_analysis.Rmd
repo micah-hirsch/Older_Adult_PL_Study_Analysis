@@ -571,7 +571,7 @@ t_for_diff(mods1)
 
 ```
 
-The plots below are showing the effects of words in noise hearing threshold and working memory on initial intelligibility for AM1.
+## Interaction Effects
 
 -   Words in Noise Hearing Threshold has a negative relationship with initial intelligibility, indicating that those with higher words in noise thresholds have lower initial intelligibility for AM1.
 -   Working Memory has a positive relationship with initial intelligibility, indicating that those listeners with greater working memory capacity had higher initial intelligibility for AM1.
@@ -606,13 +606,20 @@ effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
   }
 }
 
+
+```
+
+
+
+```{r, echo = F, warning = F, message = F}
+
 # AM1 Effect Plots
 
 effect_plot(mods1, best_win, int = F) # Words in Noise
 effect_plot(mods1, list_sort_c, int = F) # Working Memory
 
-
 ```
+
 
 ### PDM10 Models
 
@@ -646,18 +653,18 @@ PDM10_initial_mod %>%
 t_for_diff(mods2)
 ```
 
-The figures below are plotting the interaction effects for the PDM10 initial intelligibility models.
+## Interaction Effects
 
 -   The interaction between working memory and words in noise hearing threshold indicates that working memory did not have much of an effect for listeners with lower (i.e. better) hearing thresholds on initial intelligibility for PDM10. However, working memory help compensate for listeners with elevated hearing thresholds.
 -   Like with AM1, words in noise hearing threshold has a negative relationship with initial intelligibility for PDM10. 
 -   The interaction between working memory and receptive vocabulary indicates that greater receptive vocabulary knowledge helped compensate for listeners with lower working memory capacity. 
 -   The interaction between cognitive flexibility and processing speech indicates that greater cognitive flexibility helped compensate for listener with lower processing speed. However, greater processing speed tends to have a negative effect on initial intelligibility for listeners with greater cognitive flexibility.
--   The interaction between inhibitory control and words in noise hearing threshold indicate that inhibitory control helped compensate for listeners with slightly elevated words in noise hearing thresholds. However, inhibitory control did not have a great effect on initial intelligibility for listeners with low or elevated hearing thresholds.
--   The interaction between receptive vocabulary and processing speed indicates that those with greater processing speed and greater vocabulary had greater initial intelligibility
+-   The interaction between inhibitory control and words in noise hearing threshold indicate that inhibitory control helped compensate for listeners with elevated words in noise hearing thresholds. However, inhibitory control did not have a great effect on initial intelligibility for listeners with lower hearing thresholds.
+-   The interaction between receptive vocabulary and processing speed indicates that those with greater processing speed and greater vocabulary had higher initial intelligibility scores for AM1. Processing speed also has a compensatory effect for listeners with lower receptive vocabulary knowledge. However, processing speed has minimal effect on initial intelligibility for listeners with average/mid-range receptive vocabulary knowledge.
 -   The interaction between cognitive flexibility and working memory indicates that cognitive flexibility helps compensate perception for listeners with lower working memory capacity, but may not have much of an effect (or even a possible negative effect) for listeners with higher working memory capacity.
 
 
-```{r, warning = F, message = F}
+```{r, eval = F, warning = F, message = F}
 
 # PDM10 Effect Plots
 
@@ -668,8 +675,8 @@ effect_plot(mods2, card_sort_c, pattern_c) # Cognitive Flexibility * Processing 
 effect_plot(mods2, pattern_c, card_sort_c) # Processing Speed * Cognitive Flexibility
 effect_plot(mods2, flanker_c, best_win) # Inhibitory Control * Words in Noise Threshold
 effect_plot(mods2, best_win, flanker_c) # Words in Noise Threshold * Inhibitory Control
-effect_plot(mods2, vocab_c, pattern_c) # Receptive Vocabulary * Processing Speed
-effect_plot(mods2, pattern_c, vocab_c) # Processing Speed * Receptive Vocabulary
+effect_plot(mods2, vocab_c, pattern_c, num = 4) # Receptive Vocabulary * Processing Speed
+effect_plot(mods2, pattern_c, vocab_c, num = 4) # Processing Speed * Receptive Vocabulary
 effect_plot(mods2, list_sort_c, card_sort_c) # Working Memory * Cognitive Flexibility
 effect_plot(mods2, card_sort_c, list_sort_c) # Cognitive Flexibility * Working Memory
 
