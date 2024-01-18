@@ -571,7 +571,7 @@ t_for_diff(mods1)
 
 ```
 
-## Interaction Effects
+#### Interaction Effects
 
 -   Words in Noise Hearing Threshold has a negative relationship with initial intelligibility, indicating that those with higher words in noise thresholds have lower initial intelligibility for AM1.
 -   Working Memory has a positive relationship with initial intelligibility, indicating that those listeners with greater working memory capacity had higher initial intelligibility for AM1.
@@ -611,7 +611,7 @@ effect_plot <- function(mod, var, var2 = NULL, int = TRUE, num = 3) {
 
 
 
-```{r, echo = F, warning = F, message = F}
+```{r, eval = F, warning = F, message = F}
 
 # AM1 Effect Plots
 
@@ -653,7 +653,7 @@ PDM10_initial_mod %>%
 t_for_diff(mods2)
 ```
 
-## Interaction Effects
+#### Interaction Effects
 
 -   The interaction between working memory and words in noise hearing threshold indicates that working memory did not have much of an effect for listeners with lower (i.e. better) hearing thresholds on initial intelligibility for PDM10. However, working memory help compensate for listeners with elevated hearing thresholds.
 -   Like with AM1, words in noise hearing threshold has a negative relationship with initial intelligibility for PDM10. 
@@ -759,7 +759,7 @@ t_for_diff(mods12)
 
 ```
 
-## Interaction Effects
+#### Interaction Effects
 
 -   The interaction between inhibitory control and words in noise threshold indicate that listeners with lower hearing thresholds and higher inhibitory control had better intelligibility improvement for AM1. However, inhibitory control had minimal effects for listeners with elevated hearing thresholds. 
 -   The interaction between processing speed and words in noise threshold indicate that greater processing speed has a negative effect on intelligibility improvement for listeners with higher hearing thresholds. ***
@@ -811,7 +811,7 @@ PDM10_change_mod %>%
 t_for_diff(mods22)
 
 ```
-## Interaction Effects
+#### Interaction Effects
 
 -   The interaction between cognitive flexibility and receptive vocabulary indicates that listeners with high cognitive flexibility  and high vocabulary knowledge had greater intelligibility improvement for PDM10. However, higher cognitive flexibility tends to have a negative effect on intelligibility improvement for PDM10 for listeners with low vocabulary knowledge. ***
 -   The interaction effect between inhibitory control and processing speed indicates that increased processing speed has a negative effect on intelligibility improvement for listeners with higher inhibitory control. However, processing speed has minimal effect on improvement when listeners have lower inhibitory control. ***
