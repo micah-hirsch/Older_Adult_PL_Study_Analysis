@@ -210,7 +210,8 @@ speaker_intel %>%
 
 # Customize colors for figures
 library(LaCroixColoR) #remotes::install_github("johannesbjork/LaCroixColoR")
-my_pal <- lacroix_palette("PeachPear", type = "discrete")
+
+my_pal <- c("#782F40", "#B89751")
 
 pl_int %>%
   ggplot() +
@@ -225,7 +226,7 @@ pl_int %>%
   facet_wrap("speaker") +
   labs(x = "Phase", y = "Intelligibility") +
   theme_classic() +
-  scale_color_manual(values = c(my_pal[5], my_pal[6])) +
+  scale_color_manual(values = my_pal) +
   theme(legend.position = "none", aspect.ratio = 1)
 
 ggsave("Plots/Pre_post.png", plot = last_plot())
