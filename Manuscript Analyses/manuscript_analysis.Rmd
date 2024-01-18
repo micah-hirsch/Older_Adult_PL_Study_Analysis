@@ -689,6 +689,11 @@ effect_plot(mods2, card_sort_c, list_sort_c) # Cognitive Flexibility * Working M
 p1 / p2
 ggsave("Plots/Initial_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
 
+# Alternative initial model figure
+
+p1 + p2
+ggsave("Plots/Initial_mods_wide.png", plot = last_plot(), width = 15, height = 5, units = "in")
+
 
 ```
 
@@ -708,7 +713,7 @@ rm(p1, p2, mods1, mods2, AM1_initial_mod, PDM10_initial_mod)
 
 Two elastic net models were used to model the relationship between the listener cognitive measures and intelligibility improvement (controlling for pretest intelligibility) for AM1: the main effects only model and the model with interactions. The difference in RMSE and R-squared is not significantly different. However, multiple interactions were indicated to be important predictors in the model. 
 
-The relative importance of the model variables are shown in the figure below. The most important variable in the model is the interaction between inhibitory control and words in noise hearing threshold followed by the interaction between processing speed and words in noise threshold, the interaction between cognitive flexibility and words in noise hearing threshold, and the interaction between inhibitory control and receptive vocabulary.
+The relative importance of the model variables are shown in the figure below. The most important variable in the model is the interaction between inhibitory control and words in noise hearing threshold followed by the interaction between processing speed and words in noise threshold.
 
 ```{r, warning = F, message = F}
 
@@ -754,25 +759,22 @@ t_for_diff(mods12)
 
 ```
 
-The the interaction effects for the intelligibility improvement model for AM1 are plotted below.
+## Interaction Effects
 
--   The interaction between inhibitory control and words in noise threshold indicate that the effect of inhibiotry control on intelligibility improvement was reduced for listeners with higher hearing thresholds
--   The interaction between processing speed and words in noise threshold indicate that greater processing speed reduced the effect on intelligibility improvement for listeners with higher thresholds.***
-- The interaction between cognitive flexibility and words in noise threshold indicate that greater cognitive flexibility helped compensate for intelligibility improvement for listeners with high thresholds. However, for listeners with lower thresholds, greater cognitive flexibility had a negative effect on improvement.
--   The interaction between inhibitory control and receptive vocabulary indicates that increased vocabulary knowledge had a positive effect on intelligibility improvement for listeners with low and high inhibitory control. However, vocabulary knowledge had a negative effect for listeners with "mid/average" inhibitory control.
+-   The interaction between inhibitory control and words in noise threshold indicate that listeners with lower hearing thresholds and higher inhibitory control had better intelligibility improvement for AM1. However, inhibitory control had minimal effects for listeners with elevated hearing thresholds. 
+-   The interaction between processing speed and words in noise threshold indicate that greater processing speed has a negative effect on intelligibility improvement for listeners with higher hearing thresholds. ***
 
 
-```{r, warning = F, message = F}
+
+```{r, eval = F, warning = F, message = F}
 
 ## AM1 Effect Plots
 
-effect_plot(mods12, flanker_c, best_win) # Inhibitory Control * Words in Noise Threshold
-effect_plot(mods12, best_win, flanker_c) # Words in Noise * Inhibitory Control
-effect_plot(mods12, pattern_c, best_win, num = 4) # Processing Speed * Words in Noise Threshold
-effect_plot(mods12, best_win, pattern_c, num = 4)
-effect_plot(mods12, card_sort_c, best_win, num = 5) # Cognitive Flexibility * Words in Noise Threshold
-effect_plot(mods12, flanker_c, vocab_c, num = 5) # Inhibitory Control * Receptive Vocabulary
-effect_plot(mods12, vocab_c, flanker_c, num = 5) # Receptive Vocabulary * Inhibitory Control
+effect_plot(mods12, flanker_c, best_win, num = 4) # Inhibitory Control * Words in Noise Threshold
+effect_plot(mods12, best_win, flanker_c, num = 4) # Words in Noise * Inhibitory Control
+effect_plot(mods12, pattern_c, best_win) # Processing Speed * Words in Noise Threshold
+effect_plot(mods12, best_win, pattern_c) # Words in Noise Threshold * Processing Speed
+
 
 
 ```
@@ -809,17 +811,16 @@ PDM10_change_mod %>%
 t_for_diff(mods22)
 
 ```
+## Interaction Effects
 
-The interaction effects for the intelligibility improvement models for PDM10 are plotted below.
-
--   The interaction between cognitive flexibility and receptive vocabulary indicates that cognitive flexibility had a positive effect on improvement for listeners with higher vocabulary knowledge, but minimal effect for listeners with lower vocabulary knowledge
--   The interaction effect between inhibitory control and processing speed indicates that processing speed has a negative effect on intelligibility improvement for listeners with mid-range inhibitory control. However, processing speed has minimal effect on improvement when listeners have lower or higher inhibitory control scores.***
+-   The interaction between cognitive flexibility and receptive vocabulary indicates that listeners with high cognitive flexibility  and high vocabulary knowledge had greater intelligibility improvement for PDM10. However, higher cognitive flexibility tends to have a negative effect on intelligibility improvement for PDM10 for listeners with low vocabulary knowledge. ***
+-   The interaction effect between inhibitory control and processing speed indicates that increased processing speed has a negative effect on intelligibility improvement for listeners with higher inhibitory control. However, processing speed has minimal effect on improvement when listeners have lower inhibitory control. ***
 -   Receptive vocabulary has a positive effect on intelligibility improvement.
 -   Inhibitory control has a negative effect on intelligibility improvement.
--   The interaction between inhibitory control and words in noise threshold indicates a positive effect of inhibitory control for listeners with low words in noise thresholds but little to no effect for listeners with elevated hearing thresholds (a potential negative effect)
+-   The interaction between inhibitory control and words in noise threshold indicates that inhibitory control had a positive effect on intelligibility improvement for listeners with low words in noise thresholds. However, inhibitory control had a minimal, and potentially negative, effect on intelligibility improvement for listeners with elevated thresholds. ***
 
 
-```{r, warning = F, message = F}
+```{r, eval = F, warning = F, message = F}
 
 ## PDM10 Effect Plots
 
@@ -830,6 +831,7 @@ effect_plot(mods22, pattern_c, flanker_c) # Processing Speed * Inhibitory Contro
 effect_plot(mods22, vocab_c, int = F) # Receptive Vocab 
 effect_plot(mods22, flanker_c, int = F) # Inhibitory Control
 effect_plot(mods22, flanker_c, best_win, num = 4) # Inhibitory Control * Words in Noise Threshold
+effect_plot(mods22, best_win, flanker_c, num = 4) # Words in Noise Threshold * Inhibitory Control
 
 
 ```
@@ -839,6 +841,9 @@ effect_plot(mods22, flanker_c, best_win, num = 4) # Inhibitory Control * Words i
 # Combining and saving change model figures
 p12 / p22
 ggsave("Plots/Change_mods.png", plot = last_plot(), width = 8, height = 10, units = "in")
+
+p12 + p22
+ggsave("Plots/Change_mods_wide.png", plot = last_plot(), width = 15, height = 5, units = "in")
 
 ```
 
