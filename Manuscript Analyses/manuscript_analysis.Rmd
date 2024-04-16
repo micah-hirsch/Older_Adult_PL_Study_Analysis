@@ -95,6 +95,10 @@ cor_df <- pl_int %>%
   dplyr::mutate(improvement = posttest - pretest) %>%
   dplyr::select(id, speaker, ends_with("_c"), best_win, pretest, posttest, improvement)
 
+demo <- cor_df %>%
+  dplyr::select(id, speaker) %>%
+  dplyr::left_join(demo, by = "id")
+
 ```
 
 ```{r, echo = F, message = F, warning = F}
@@ -108,19 +112,21 @@ rm(age, data)
 
 ## Participant Demographics
 
-A total of 60 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
+A total of 59 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
 
-```{r}
+```{r, warning = F, message = F}
 
 demo_table <- demo %>%
   dplyr::select(-id) %>%
-  tbl_summary(type = list(age ~ "continuous",
+  tbl_summary(by = speaker,
+              type = list(age ~ "continuous",
                           gender ~ "categorical",
                           race ~ "categorical",
                           ethnicity ~ "categorical"),
               statistic = list(all_continuous() ~ "{mean} ({sd})",
                               all_categorical() ~ "{n} ({p}%)"),
               digits = list(everything() ~ c(2))) %>%
+  add_overall() %>%
   as_gt()
 
 demo_table
@@ -209,19 +215,18 @@ speaker_intel %>%
 ```{r, warning = F, message = F}
 
 # Customize colors for figures
-library(LaCroixColoR) #remotes::install_github("johannesbjork/LaCroixColoR")
+library(LaCroixColoR) # remotes::install_github("johannesbjork/LaCroixColoR")
 
-my_pal <- c("#782F40", "#B89751")
+my_pal <- c("#62A87C", "#313B72")
 
 pl_int %>%
   ggplot() +
   aes(x = type,
       y = pwc,
-      group = id,
-      color = speaker) +
+      group = id) +
   geom_line(alpha = 0.3) +
   geom_point(alpha = 0.3) +
-  stat_summary(aes(group = speaker),
+  stat_summary(aes(group = speaker, color = speaker),
                fun.y = mean, geom = "line", linewidth = 2) +
   facet_wrap("speaker") +
   labs(x = "Phase", y = "Intelligibility") +
@@ -233,7 +238,7 @@ ggsave("Plots/Pre_post.png", plot = last_plot())
 
 ```
 
-```{r}
+```{r, warning = F, message = F}
 
 cor_df %>% 
   dplyr::select(id, speaker, pretest, posttest) %>% 
@@ -762,7 +767,7 @@ t_for_diff(mods12)
 #### Interaction Effects
 
 -   The interaction between inhibitory control and words in noise threshold indicate that listeners with lower hearing thresholds and higher inhibitory control had better intelligibility improvement for AM1. However, inhibitory control had minimal effects for listeners with elevated hearing thresholds. 
--   The interaction between processing speed and words in noise threshold indicate that greater processing speed has a negative effect on intelligibility improvement for listeners with higher hearing thresholds. ***
+-   The interaction between processing speed and words in noise threshold indicate that greater processing speed has a postive effect on intelligibility improvement for listeners with lower hearing thresholds. However, it likely has a negative effect on intelligibility improvement for listeners with higher hearing thresholds. ***
 
 
 
@@ -813,7 +818,7 @@ t_for_diff(mods22)
 ```
 #### Interaction Effects
 
--   The interaction between cognitive flexibility and receptive vocabulary indicates that listeners with high cognitive flexibility  and high vocabulary knowledge had greater intelligibility improvement for PDM10. However, higher cognitive flexibility tends to have a negative effect on intelligibility improvement for PDM10 for listeners with low vocabulary knowledge. ***
+-   The interaction between cognitive flexibility and receptive vocabulary indicates that listeners with high cognitive flexibility and high vocabulary knowledge had greater intelligibility improvement for PDM10. However, higher cognitive flexibility tends to have a negative effect on intelligibility improvement for PDM10 for listeners with low vocabulary knowledge.
 -   The interaction effect between inhibitory control and processing speed indicates that increased processing speed has a negative effect on intelligibility improvement for listeners with higher inhibitory control. However, processing speed has minimal effect on improvement when listeners have lower inhibitory control. ***
 -   Receptive vocabulary has a positive effect on intelligibility improvement.
 -   Inhibitory control has a negative effect on intelligibility improvement.
