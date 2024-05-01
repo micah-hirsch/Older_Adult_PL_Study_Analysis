@@ -768,6 +768,8 @@ t_for_diff(mods12)
 
 -   The interaction between inhibitory control and words in noise threshold indicate that listeners with lower hearing thresholds and higher inhibitory control had better intelligibility improvement for AM1. However, inhibitory control had minimal effects for listeners with elevated hearing thresholds. 
 -   The interaction between processing speed and words in noise threshold indicate that greater processing speed has a postive effect on intelligibility improvement for listeners with lower hearing thresholds. However, it likely has a negative effect on intelligibility improvement for listeners with higher hearing thresholds. ***
+- The interaction between cognitive flexibility and words in noise threshold indicate that greater cognitive flexibility has a positive effect on intelligibility improvement for listeners with higher (i.e. worse) words in noise hearing thresholds. However, it did not have much of an effect for listeners with lower WIN thresholds.
+- The interaction between receptive vocabulary and inhibiotry control indicate that greater receptive vocabulary has a positive effect on intelligibility improvement for listeners with very low and very high inhibitory control (i.e. higher receptive vocabulary had a compensatory effect for listeners with low inhibitory control and an additive effect for listeners with very high inhibitory control). However, receptive vocabulary appears to have a negative effect for listeners with around average inhibitory control (i.e. higher receptive vocabulary was associated with less intelligibility improvement for listeners with mid-range inhibitory control skills).
 
 
 
@@ -779,8 +781,10 @@ effect_plot(mods12, flanker_c, best_win, num = 4) # Inhibitory Control * Words i
 effect_plot(mods12, best_win, flanker_c, num = 4) # Words in Noise * Inhibitory Control
 effect_plot(mods12, pattern_c, best_win) # Processing Speed * Words in Noise Threshold
 effect_plot(mods12, best_win, pattern_c) # Words in Noise Threshold * Processing Speed
-
-
+effect_plot(mods12, best_win, card_sort_c) # Words in Noise Threshold * Cognitive Flexibility
+effect_plot(mods12, card_sort_c, best_win) # Cognitive Flexibility * Words in Noise Threshold
+effect_plot(mods12, flanker_c, vocab_c, num = 4) # Inhibitory Control * Receptive Vocabulary
+effect_plot(mods12, vocab_c, flanker_c, num = 4) # Receptive Vocabulary * Inhibitory Control
 
 ```
 
