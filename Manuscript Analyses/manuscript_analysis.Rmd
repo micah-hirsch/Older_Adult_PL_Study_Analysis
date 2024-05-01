@@ -214,12 +214,11 @@ speaker_intel %>%
 
 ```{r, warning = F, message = F}
 
-# Customize colors for figures
-library(LaCroixColoR) # remotes::install_github("johannesbjork/LaCroixColoR")
-
 my_pal <- c("#62A87C", "#313B72")
 
 pl_int %>%
+  dplyr::mutate(speaker = factor(speaker, levels = c("AM1", "PDM10"),
+                                 labels = c("Ataxic","PD"))) %>%
   ggplot() +
   aes(x = type,
       y = pwc,
@@ -275,6 +274,7 @@ Words in noise significantly correlated with pretest intelligibility for AM1 at 
 ```{r, warning = F, message = F}
 
 # Customize plot colors
+library(LaCroixColoR)
 my_pal <- lacroix_palette("PeachPear", n = 15, type = "continuous")
 my_pal <- rev(my_pal)
 
@@ -363,7 +363,7 @@ PDM10_cor <- cor_df %>%
     colors = c(my_pal[1], "white", my_pal[15]),
     lab = TRUE,
     insig = "blank",
-    title = "Parkinson's Disease", 
+    title = "PD", 
     legend.title = "Correlation"
   )
 
