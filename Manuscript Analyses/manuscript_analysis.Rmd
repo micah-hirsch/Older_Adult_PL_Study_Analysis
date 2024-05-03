@@ -684,6 +684,7 @@ effect_plot(mods2, vocab_c, pattern_c, num = 4) # Receptive Vocabulary * Process
 effect_plot(mods2, pattern_c, vocab_c, num = 4) # Processing Speed * Receptive Vocabulary
 effect_plot(mods2, list_sort_c, card_sort_c) # Working Memory * Cognitive Flexibility
 effect_plot(mods2, card_sort_c, list_sort_c) # Cognitive Flexibility * Working Memory
+effect_plot(mods2, flanker_c, int = F) # Inhibitory Control
 
 ```
 
