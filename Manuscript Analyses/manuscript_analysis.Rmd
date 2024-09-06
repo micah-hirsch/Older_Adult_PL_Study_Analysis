@@ -166,9 +166,6 @@ cog_table <- pl_int %>%
     `Processing Speed` = pattern_c,
     `Words in Noise Threshold` = best_win
   ) %>%
-  group_by(id, speaker) %>% 
-  summarize(across(everything(), first)) %>% 
-  ungroup() %>% 
   select(-id) %>% 
   tbl_summary(
     by = "speaker",
@@ -192,7 +189,7 @@ cog_table %>%
 
 The younger adult data comes from https://osf.io/y32qc/
 
-```{r}
+```{r, warning = F, message = F}
 
 older_adult <- pl_int |>
   dplyr::filter(type == "pretest") |>
@@ -217,6 +214,7 @@ compare_table_c <- compare_df %>%
     `Processing Speed` = pattern_c,
     `Words in Noise Threshold` = win
   ) %>%
+  dplyr::mutate(group = factor(group, levels = c("young", "old"))) %>%
   select(-id) %>% 
   tbl_summary(
     by = group,
@@ -224,8 +222,7 @@ compare_table_c <- compare_df %>%
     missing = "no",
     digits = list(everything() ~ c(2))
   ) %>% 
-  add_p() %>%
-  as_gt() 
+  add_p() 
 
 compare_table_c
 
@@ -236,7 +233,7 @@ compare_table_c
 #### Uncorrected Scores
 
 
-```{r}
+```{r, warning = F, message = F}
 
 compare_table_u <- compare_df %>%
   dplyr::select(id, ends_with("_u"), win, group) %>% 
@@ -248,6 +245,7 @@ compare_table_u <- compare_df %>%
     `Processing Speed` = pattern_u,
     `Words in Noise Threshold` = win
   ) %>%
+  dplyr::mutate(group = factor(group, levels = c("young", "old"))) %>%
   select(-id) %>% 
   tbl_summary(
     by = group,
@@ -255,8 +253,7 @@ compare_table_u <- compare_df %>%
     missing = "no",
     digits = list(everything() ~ c(2))
   ) %>% 
-  add_p() %>%
-  as_gt() 
+  add_p()
 
 compare_table_u
 
@@ -264,6 +261,21 @@ compare_table_u
 ```
 
 
+```{r, eval = F}
+
+tbl_merge(tbls = list(compare_table_u, compare_table_c),
+          tab_spanner = c("***Uncorrected Standardized Scores***", "***Age-Corrected Standardized Scores***")) |>
+  as_gt() |>
+  gt::gtsave("Tables/compare_table.html")
+
+```
+
+
+```{r, echo = F}
+
+rm(young_adult, older_adult, compare_table_c, compare_table_u, compare_df)
+
+```
 
 
 ## Intelligibility
@@ -320,6 +332,7 @@ pl_int %>%
 ggsave("Plots/Pre_post.png", plot = last_plot())
 
 ```
+
 
 ```{r, warning = F, message = F}
 
@@ -390,36 +403,6 @@ AM1_cor
 
 ```
 
-The plot below shows only the significant correlations in the matrix above for AM1.
-
-```{r, warning = F, message = F}
-
-cor_df %>%
-  dplyr::filter(speaker == "AM1") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
-  dplyr::rename(
-    `Working Memory` = list_sort_c,
-    `Inhibitory Control` = flanker_c,
-    `Cognitive Flexibility` = card_sort_c,
-    `Receptive Vocabulary` = vocab_c,
-    `Processing Speed` = pattern_c,
-    `Words in Noise Threshold` = best_win
-  ) %>%
-  dplyr::rename_all(snakecase::to_title_case) %>%
-  cor(use = "pairwise.complete.obs") %>%
-  ggcorrplot(
-    type = "lower",
-    outline.col = "white",
-    colors = c(my_pal[1], "white", my_pal[15]),
-    lab = TRUE,
-    p.mat = cor_pmat(.),
-    sig.level = 0.05,
-    insig = "blank",
-    title = "Ataxic", 
-    legend.title = "Correlation"
-  )
-
-```
 
 ### PDM10
 
@@ -455,36 +438,6 @@ PDM10_cor
 
 ```
 
-The plot below only shows the significant correlations for PDM10.
-
-```{r}
-
-cor_df %>%
-  dplyr::filter(speaker == "PDM10") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
-  dplyr::rename(
-    `Working Memory` = list_sort_c,
-    `Inhibitory Control` = flanker_c,
-    `Cognitive Flexibility` = card_sort_c,
-    `Receptive Vocabulary` = vocab_c,
-    `Processing Speed` = pattern_c,
-    `Words in Noise Threshold` = best_win
-  ) %>%
-  dplyr::rename_all(snakecase::to_title_case) %>%
-  cor(use = "pairwise.complete.obs") %>%
-  ggcorrplot(
-    type = "lower",
-    outline.col = "white",
-    colors = c(my_pal[1], "white", my_pal[15]),
-    lab = TRUE,
-    p.mat = cor_pmat(.),
-    insig = "blank",
-    sig.level = 0.05,
-    title = "Parkinson's Disease", 
-    legend.title = "Correlation"
-  )
-
-```
 
 ```{r, eval = F, warning = F, message = F}
 
