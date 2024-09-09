@@ -58,6 +58,20 @@ young_adult <- rio::import("cleaned_scored.csv") |>
 
 ```
 
+We had to remove two participants from this analysis since we do not have any cognitive or hearing data from them. However, the mean age and range for all 60 participants we collected are below.(Note: one of the people we dropped also didn't have their age recorded. Therefore the M/SD below )
+
+```{r, warning = F, message - F}
+
+demo %>%
+  dplyr::select(-c(id, gender, race, ethnicity)) %>%
+  tbl_summary(type = list(age ~ "continuous"),
+              statistic = list(all_continuous() ~ "{mean} ({sd});{min}-{max})"),
+              missing = "no",
+              digits = list(everything() ~ c(2)))
+```
+
+
+
 First, pretest and posttest intelligibility was calculated as a percent words correct (pwc) score for each listener. Pretest PWC and PWC change (posttest-pretest) will be our outcome variables for the analyses.
 
 ```{r, warning = F, message = F}
@@ -68,7 +82,7 @@ data <- data %>%
   dplyr::filter(id != 323 & id != 332)
 
 demo <- demo %>%
-  dplyr::filter(id != 323 & id != 332)
+  dplyr::filter(id != 323 & id != 332 )
 
 # Calculating pretest and posttest intelligibility for the listeners
 pl_int <- data %>%
@@ -116,7 +130,7 @@ rm(age, data)
 
 ## Participant Demographics
 
-A total of 59 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
+A total of 58 older adult listeners participated in the study (excluding the two listeners we had to remove). The overall demographic information for the 58 participants are in the table below.
 
 ```{r, warning = F, message = F}
 
