@@ -20,7 +20,7 @@ This document contains the analysis code and output for the manuscript entitled 
 
 The data preprocessing script can be found in the Manuscript Analyses subdirectory in this repo.
 
-All data processing and analyses were conducted using R Version 4.3.2.
+All data processing and analyses were conducted using R Version 4.4.1
 
 ```{r, echo = F, warning = F, message = F}
 
@@ -52,7 +52,25 @@ demo <- rio::import("participant_demo.csv")
 ## Listener Intelligibility and Cognition Scores
 data <- rio::import("cleaned_data.csv")
 
+## Younger adult df
+young_adult <- rio::import("cleaned_scored.csv") |>
+  dplyr::select(-group_number)
+
 ```
+
+We had to remove two participants from this analysis since we do not have any cognitive or hearing data from them. However, the mean age and range for all 60 participants we collected are below.(Note: one of the people we dropped also didn't have their age recorded. Therefore the M/SD below )
+
+```{r, warning = F, message - F}
+
+demo %>%
+  dplyr::select(-c(id, gender, race, ethnicity)) %>%
+  tbl_summary(type = list(age ~ "continuous"),
+              statistic = list(all_continuous() ~ "{mean} ({sd});{min}-{max})"),
+              missing = "no",
+              digits = list(everything() ~ c(2)))
+```
+
+
 
 First, pretest and posttest intelligibility was calculated as a percent words correct (pwc) score for each listener. Pretest PWC and PWC change (posttest-pretest) will be our outcome variables for the analyses.
 
@@ -114,6 +132,7 @@ rm(age, data)
 
 A total of 58 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
 
+
 ```{r, warning = F, message = F}
 
 demo_table <- demo %>%
@@ -162,9 +181,6 @@ cog_table <- pl_int %>%
     `Processing Speed` = pattern_c,
     `Words in Noise Threshold` = best_win
   ) %>%
-  group_by(id, speaker) %>% 
-  summarize(across(everything(), first)) %>% 
-  ungroup() %>% 
   select(-id) %>% 
   tbl_summary(
     by = "speaker",
@@ -181,6 +197,101 @@ cog_table %>%
   gt::gtsave("Tables/means_tabel.html")
 
 ```
+
+### Comparing Younger vs. Older Adults
+
+#### Age-Corrected
+
+The younger adult data comes from https://osf.io/y32qc/
+
+```{r, warning = F, message = F}
+
+older_adult <- pl_int |>
+  dplyr::filter(type == "pretest") |>
+  dplyr::select(id, ends_with("_c"), ends_with("_u"), best_win) |>
+  dplyr::select(-c(fluid_cog_c, fluid_cog_u, pic_seq_c, pic_seq_u)) |>
+  dplyr::rename(win = best_win) |>
+  dplyr::mutate(group = "old") |>
+  dplyr::filter()
+
+young_adult <- young_adult |>
+  dplyr::select(-c(age_in_years, win_l, win_r, fluid_cog_c, fluid_cog_u, pic_seq_c, pic_seq_u))
+
+compare_df <- rbind(older_adult, young_adult)
+
+compare_table_c <- compare_df %>%
+  dplyr::select(id, ends_with("_c"), win, group) %>% 
+  dplyr::rename(
+    `Working Memory` = list_sort_c,
+    `Inhibitory Control` = flanker_c,
+    `Cognitive Flexibility` = card_sort_c,
+    `Receptive Vocabulary` = vocab_c,
+    `Processing Speed` = pattern_c,
+    `Words in Noise Threshold` = win
+  ) %>%
+  dplyr::mutate(group = factor(group, levels = c("young", "old"))) %>%
+  select(-id) %>% 
+  tbl_summary(
+    by = group,
+    statistic = list(all_continuous() ~ "{mean} ({sd})"),
+    missing = "no",
+    digits = list(everything() ~ c(2))
+  ) %>% 
+  add_p() 
+
+compare_table_c
+
+
+```
+
+
+#### Uncorrected Scores
+
+
+```{r, warning = F, message = F}
+
+compare_table_u <- compare_df %>%
+  dplyr::select(id, ends_with("_u"), win, group) %>% 
+  dplyr::rename(
+    `Working Memory` = list_sort_u,
+    `Inhibitory Control` = flanker_u,
+    `Cognitive Flexibility` = card_sort_u,
+    `Receptive Vocabulary` = vocab_u,
+    `Processing Speed` = pattern_u,
+    `Words in Noise Threshold` = win
+  ) %>%
+  dplyr::mutate(group = factor(group, levels = c("young", "old"))) %>%
+  select(-id) %>% 
+  tbl_summary(
+    by = group,
+    statistic = list(all_continuous() ~ "{mean} ({sd})"),
+    missing = "no",
+    digits = list(everything() ~ c(2))
+  ) %>% 
+  add_p()
+
+compare_table_u
+
+
+```
+
+
+```{r, eval = F}
+
+tbl_merge(tbls = list(compare_table_u, compare_table_c),
+          tab_spanner = c("***Uncorrected Standardized Scores***", "***Age-Corrected Standardized Scores***")) |>
+  as_gt() |>
+  gt::gtsave("Tables/compare_table.html")
+
+```
+
+
+```{r, echo = F}
+
+rm(young_adult, older_adult, compare_table_c, compare_table_u, compare_df)
+
+```
+
 
 ## Intelligibility
 
@@ -236,6 +347,7 @@ pl_int %>%
 ggsave("Plots/Pre_post.png", plot = last_plot())
 
 ```
+
 
 ```{r, warning = F, message = F}
 
@@ -306,36 +418,6 @@ AM1_cor
 
 ```
 
-The plot below shows only the significant correlations in the matrix above for AM1.
-
-```{r, warning = F, message = F}
-
-cor_df %>%
-  dplyr::filter(speaker == "AM1") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
-  dplyr::rename(
-    `Working Memory` = list_sort_c,
-    `Inhibitory Control` = flanker_c,
-    `Cognitive Flexibility` = card_sort_c,
-    `Receptive Vocabulary` = vocab_c,
-    `Processing Speed` = pattern_c,
-    `Words in Noise Threshold` = best_win
-  ) %>%
-  dplyr::rename_all(snakecase::to_title_case) %>%
-  cor(use = "pairwise.complete.obs") %>%
-  ggcorrplot(
-    type = "lower",
-    outline.col = "white",
-    colors = c(my_pal[1], "white", my_pal[15]),
-    lab = TRUE,
-    p.mat = cor_pmat(.),
-    sig.level = 0.05,
-    insig = "blank",
-    title = "Ataxic", 
-    legend.title = "Correlation"
-  )
-
-```
 
 ### PDM10
 
@@ -371,36 +453,6 @@ PDM10_cor
 
 ```
 
-The plot below only shows the significant correlations for PDM10.
-
-```{r}
-
-cor_df %>%
-  dplyr::filter(speaker == "PDM10") %>%
-  dplyr::select(!c(id, speaker, fluid_cog_c, pic_seq_c, posttest)) %>%
-  dplyr::rename(
-    `Working Memory` = list_sort_c,
-    `Inhibitory Control` = flanker_c,
-    `Cognitive Flexibility` = card_sort_c,
-    `Receptive Vocabulary` = vocab_c,
-    `Processing Speed` = pattern_c,
-    `Words in Noise Threshold` = best_win
-  ) %>%
-  dplyr::rename_all(snakecase::to_title_case) %>%
-  cor(use = "pairwise.complete.obs") %>%
-  ggcorrplot(
-    type = "lower",
-    outline.col = "white",
-    colors = c(my_pal[1], "white", my_pal[15]),
-    lab = TRUE,
-    p.mat = cor_pmat(.),
-    insig = "blank",
-    sig.level = 0.05,
-    title = "Parkinson's Disease", 
-    legend.title = "Correlation"
-  )
-
-```
 
 ```{r, eval = F, warning = F, message = F}
 
