@@ -58,13 +58,13 @@ First, pretest and posttest intelligibility was calculated as a percent words co
 
 ```{r, warning = F, message = F}
 
-# Removing Participant 323 from the dataset (missing demographic and cognitive data)
+# Removing Participant 323 and 332 from the dataset (missing demographic and cognitive data)
 
 data <- data %>%
-  dplyr::filter(id != 323)
+  dplyr::filter(id != 323 & id != 332)
 
 demo <- demo %>%
-  dplyr::filter(id != 323)
+  dplyr::filter(id != 323 & id != 332)
 
 # Calculating pretest and posttest intelligibility for the listeners
 pl_int <- data %>%
@@ -112,7 +112,7 @@ rm(age, data)
 
 ## Participant Demographics
 
-A total of 59 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
+A total of 58 older adult listeners participated in the study. The overall demographic information for the participants are in the table below.
 
 ```{r, warning = F, message = F}
 
@@ -184,7 +184,7 @@ cog_table %>%
 
 ## Intelligibility
 
-Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,32) = 103.69, p \< .001, d = 1.01).
+Pretest and posttest intelligibility, as measured by percent words correct, for each of the two speaker conditions are presented below. On average, pretest intelligibility for AM1 was lower than PDM10. However, the listener's who were trained with AM1, on average, had greater intelligibility gains at posttest compared to the listener's trained with PDM10. A repeated measures ANOVA was conducted on the pretest-posttest change for the AM1 was significant (F(1,31) = 101.83, p \< .001, d = 1.05).
 
 ```{r, warning = F, message = F}
 
