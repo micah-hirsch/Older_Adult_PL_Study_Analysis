@@ -1,7 +1,7 @@
 # Data Preprocessing
 
 # Author: Micah E. Hirsch (mhirsch@fsu.edu)
-# Date: 12/7/2023
+# Date: 12/13/2024
 
 # R Version: 4.3.2
 # Purpose: To prepare data for analysis
@@ -18,7 +18,7 @@ library(lubridate) #install.packages("lubridate")
 
 # Set Working Directory
 
-setwd("~/Documents/Github Repositories/Older Adult PL Study Analysis/Raw Data")
+setwd("~/Documents/Github/Older Adult PL Study Analysis/Raw Data")
 
 # Specifying paths for where listener data is located
 file_path <- list.dirs(path = "./Participant Data", full.names = T, recursive = F)
@@ -108,13 +108,18 @@ transcriptions <- transcriptions %>%
 
 targets <- rio::import_list("Stimuli List/Stimuli Testing Sets.xlsx", 
                             which = c("Pretest", "Posttest"), rbind = T, rbind_label = "Type") %>%
-  rename_all(., .funs = tolower)
+  rename_all(., .funs = tolower) %>%
+  dplyr::mutate(target = tolower(target),
+                target = trimws(target, "both"),
+                target_number = str_count(target, "\\S+"))
 
 transcriptions_fixed <- transcriptions %>%
-  dplyr::rename(target2 = target) %>%
+  dplyr::rename(target2 = target,
+                target_number2 = target_number) %>%
   dplyr::left_join(targets, by = "code") %>%
-  mutate(target = dplyr::if_else(speaker %in%  "PDM10", target2, target)) %>% 
-  select(-c(target2, type.y)) %>%
+  mutate(target = dplyr::if_else(speaker %in%  "PDM10", target2, target),
+         target_number = dplyr::if_else(speaker %in% "PDM10", target_number2, target_number)) %>% 
+  select(-c(target2, target_number2, type.y)) %>%
   dplyr::rename(type = type.x) %>%
   dplyr::relocate(target, .before = target_number)
 
@@ -253,7 +258,7 @@ cleaned_data <- cleaned_data %>%
 rm(cog, cog_subtests, cog1, corrected, uncorrected, win, words_in_noise, i, new_names)
 
 # Export 
-setwd("~/Documents/Github Repositories/Older Adult PL Study Analysis/Manuscript Analyses")
+setwd("~/Documents/Github/Older Adult PL Study Analysis/Manuscript Analyses")
 
 ## intelligibility and cog df
 rio::export(cleaned_data, "cleaned_data.csv")
